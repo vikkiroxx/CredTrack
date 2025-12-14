@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Label } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 
 export function SpendingPieChart() {
