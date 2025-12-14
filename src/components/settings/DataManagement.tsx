@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { Download, Upload, X, AlertTriangle } from 'lucide-react';
 
 export function DataManagement({ onClose }: { onClose: () => void }) {
-    const { categories, spends, importData } = useData();
+    const { categories, spends, importData, clearAllData } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleExport = () => {
@@ -108,6 +108,27 @@ export function DataManagement({ onClose }: { onClose: () => void }) {
                                 className="hidden"
                             />
                         </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-border">
+                        <h3 className="text-sm font-semibold text-destructive mb-2">Danger Zone</h3>
+                        <button
+                            onClick={() => {
+                                if (confirm('ARE YOU SURE? This will permanently delete ALL your categories and spends. This action cannot be undone.')) {
+                                    clearAllData();
+                                    onClose();
+                                }
+                            }}
+                            className="flex items-center justify-between w-full p-4 bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive/20 transition-all group"
+                        >
+                            <div className="text-left">
+                                <p className="font-bold flex items-center gap-2 text-destructive">
+                                    <AlertTriangle className="w-5 h-5" />
+                                    Reset App Data
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">Clear all categories and spends</p>
+                            </div>
+                        </button>
                     </div>
 
                     <p className="text-xs text-center text-muted-foreground pt-4">

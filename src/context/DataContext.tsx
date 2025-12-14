@@ -38,6 +38,7 @@ type DataContextType = {
     updateSpend: (id: string, updates: Partial<Spend>) => void;
     deleteSpend: (id: string) => void;
     importData: (data: { categories: Category[], spends: Spend[] }) => void;
+    clearAllData: () => Promise<void>;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -167,8 +168,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const clearAllData = async () => {
+        // Clear State
+        setCategories([]);
+        setSpends([]);
+
+        // Clear Local Storage
+        localStorage.removeItem('credtrack_categories');
+        localStorage.removeItem('credtrack_spends');
+
+        // Clear Firestore (if logged in)
+        if (user) {
+            try {
+                await setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: [] });
+                await setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: [] });
+            } catch (error) {
+                console.error("Error clearing cloud data:", error);
+                alert("Failed to clear cloud data. Please try again.");
+            }
+        }
+    };
+
     return (
-        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, importData }}>
+        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, importData, clearAllData }}>
             {children}
         </DataContext.Provider>
     );

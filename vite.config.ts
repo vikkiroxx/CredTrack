@@ -14,7 +14,13 @@ export default defineConfig({
         short_name: 'CredTrack',
         description: 'Personal Finance Tracker for Credit Cards and EMIs',
         theme_color: '#16a34a', // green-600
-        icons: []
+        icons: [
+          {
+            src: 'icon.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
       }
     })
   ],
