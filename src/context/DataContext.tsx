@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from './AuthContext';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 // Types
 export type Category = {
     id: string;
     name: string;
     color: string;
-    nextBillDate?: string; // ISO string for next bill/due date
+    nextBillDate?: string;
     icon?: string;
     createdAt: string;
 };
@@ -15,13 +18,13 @@ export type Spend = {
     id: string;
     amount: number;
     description: string;
-    date: string; // ISO string
+    date: string;
     categoryId: string;
     subcategory?: string;
     isPaid: boolean;
     isRecurring: boolean;
     dueDate?: string;
-    emiEndDate?: string; // ISO string for when the recurring payment stops
+    emiEndDate?: string;
     createdAt: string;
 };
 
@@ -40,7 +43,9 @@ type DataContextType = {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-    // Load initial state from localStorage
+    const { user } = useAuth();
+
+    // Initial state from localStorage (for Guest/Initial load)
     const [categories, setCategories] = useState<Category[]>(() => {
         const saved = localStorage.getItem('credtrack_categories');
         return saved ? JSON.parse(saved) : [];
@@ -51,7 +56,47 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return saved ? JSON.parse(saved) : [];
     });
 
-    // Save to localStorage whenever state changes
+    // Sync with Firestore if User is logged in
+    useEffect(() => {
+        if (!user) {
+            // Fallback to localStorage logic is handled by other effects, 
+            // but we might want to clear state if switching from User -> Guest (Logout)
+            // For now, let's keep the local state persists.
+            return;
+        }
+
+        const catRef = doc(db, 'users', user.uid, 'data', 'categories');
+        const spendRef = doc(db, 'users', user.uid, 'data', 'spends');
+
+        const unsubscribeCat = onSnapshot(catRef, (doc) => {
+            if (doc.exists()) {
+                setCategories(doc.data().list || []);
+            } else {
+                // First time login? Sync local data to cloud?
+                // For simplicity, if cloud is empty, we push local data.
+                if (categories.length > 0) {
+                    setDoc(catRef, { list: categories }, { merge: true });
+                }
+            }
+        });
+
+        const unsubscribeSpend = onSnapshot(spendRef, (doc) => {
+            if (doc.exists()) {
+                setSpends(doc.data().list || []);
+            } else {
+                if (spends.length > 0) {
+                    setDoc(spendRef, { list: spends }, { merge: true });
+                }
+            }
+        });
+
+        return () => {
+            unsubscribeCat();
+            unsubscribeSpend();
+        };
+    }, [user]);
+
+    // Sync to LocalStorage (Always backup locally for redundancy or guest mode)
     useEffect(() => {
         localStorage.setItem('credtrack_categories', JSON.stringify(categories));
     }, [categories]);
@@ -59,6 +104,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         localStorage.setItem('credtrack_spends', JSON.stringify(spends));
     }, [spends]);
+
+    // --- Actions ---
+
+    const saveCategories = (newCategories: Category[]) => {
+        setCategories(newCategories); // Optimistic Update
+        if (user) {
+            setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: newCategories });
+        }
+    };
+
+    const saveSpends = (newSpends: Spend[]) => {
+        setSpends(newSpends); // Optimistic Update
+        if (user) {
+            setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: newSpends });
+        }
+    };
 
     const addCategory = (name: string, color: string, nextBillDate?: string) => {
         const newCategory: Category = {
@@ -68,15 +129,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             nextBillDate,
             createdAt: new Date().toISOString(),
         };
-        setCategories(prev => [...prev, newCategory]);
+        saveCategories([...categories, newCategory]);
     };
 
     const updateCategory = (id: string, updates: Partial<Category>) => {
-        setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+        saveCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c));
     };
 
     const deleteCategory = (id: string) => {
-        setCategories(prev => prev.filter(c => c.id !== id));
+        saveCategories(categories.filter(c => c.id !== id));
     };
 
     const addSpend = (spendData: Omit<Spend, 'id' | 'createdAt'>) => {
@@ -85,22 +146,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             id: uuidv4(),
             createdAt: new Date().toISOString(),
         };
-        setSpends(prev => [...prev, newSpend]);
+        saveSpends([...spends, newSpend]);
     };
 
     const updateSpend = (id: string, updates: Partial<Spend>) => {
-        setSpends(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+        saveSpends(spends.map(s => s.id === id ? { ...s, ...updates } : s));
     };
 
     const deleteSpend = (id: string) => {
-        setSpends(prev => prev.filter(s => s.id !== id));
+        saveSpends(spends.filter(s => s.id !== id));
     };
 
     const importData = (data: { categories: Category[], spends: Spend[] }) => {
-        // Basic validation could go here
         if (Array.isArray(data.categories) && Array.isArray(data.spends)) {
-            setCategories(data.categories);
-            setSpends(data.spends);
+            saveCategories(data.categories);
+            saveSpends(data.spends);
             alert('Data imported successfully!');
         } else {
             alert('Invalid data format.');
