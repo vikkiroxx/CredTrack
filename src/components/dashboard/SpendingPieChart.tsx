@@ -62,24 +62,6 @@ export function SpendingPieChart() {
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
-                            <Label
-                                content={({ viewBox }) => {
-                                    if (viewBox && typeof viewBox === 'object' && 'cx' in viewBox && 'cy' in viewBox) {
-                                        const { cx, cy } = viewBox;
-                                        return (
-                                            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
-                                                <tspan x={cx} y={cy - 10} fontSize="12" fill="currentColor" className="text-muted-foreground font-medium">
-                                                    Total
-                                                </tspan>
-                                                <tspan x={cx} y={cy + 15} fontSize="20" fontWeight="bold" fill="currentColor" className="text-foreground">
-                                                    ₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </tspan>
-                                            </text>
-                                        );
-                                    }
-                                    return null;
-                                }}
-                            />
                         </Pie>
                         <Tooltip
                             formatter={(value: number) => [`₹${value}`, 'Spent']}
@@ -91,9 +73,24 @@ export function SpendingPieChart() {
                             }}
                             itemStyle={{ color: theme === 'dark' ? '#f8fafc' : '#0f172a' }}
                         />
-                        <Legend />
                     </PieChart>
                 </ResponsiveContainer>
+
+                {/* Center Text - Absolutely centered relative to h-64 container */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <p className="text-xs text-muted-foreground font-medium translate-y-[-2px]">Total</p>
+                    <p className="text-xl font-bold text-foreground">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+            </div>
+
+            {/* Custom Legend */}
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2 px-2">
+                {data.map((entry) => (
+                    <div key={entry.name} className="flex items-center gap-1.5 text-xs sm:text-sm">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                        <span className="text-muted-foreground">{entry.name}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );
