@@ -23,35 +23,45 @@ type ViewState =
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [view, setView] = useState<ViewState>({ type: 'HOME' });
+
+  // Helper to parse hash
+  const getViewFromHash = (): ViewState => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/category/')) {
+      const id = hash.replace('#/category/', '');
+      return { type: 'CATEGORY', categoryId: id };
+    }
+    if (hash === '#/insights') return { type: 'INSIGHTS' };
+    if (hash === '#/history') return { type: 'HISTORY' };
+    return { type: 'HOME' };
+  };
+
+  const [view, setView] = useState<ViewState>(getViewFromHash);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSpendModalOpen, setIsSpendModalOpen] = useState(false);
   const [spendInitialData, setSpendInitialData] = useState<InitialSpendData | undefined>(undefined);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Sync with Browser History
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state) {
-        setView(event.state);
-      } else {
-        setView({ type: 'HOME' });
-      }
+    const handleHashChange = () => {
+      setView(getViewFromHash());
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    // Set initial hash if empty
+    if (!window.location.hash) {
+      window.location.replace('#/');
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const navigate = (newView: ViewState) => {
-    window.history.pushState(newView, '', '');
-    setView(newView);
-  };
+  const navigateToHome = () => window.location.hash = '#/';
+  const navigateToInsights = () => window.location.hash = '#/insights';
+  const navigateToHistory = () => window.location.hash = '#/history';
+  const navigateToCategory = (id: string) => window.location.hash = `#/category/${id}`;
 
   const goBack = () => {
-    // Check if we can go back? Browsers don't expose stack length securely.
-    // But safely, we can just call back(). If nowhere to go, it does nothing or exits (which is fine if at root).
-    // However, if we are at root, we shouldn't show back button anyway.
     window.history.back();
   };
 
@@ -95,14 +105,14 @@ function AppContent() {
             {view.type === 'HOME' && (
               <>
                 <button
-                  onClick={() => navigate({ type: 'INSIGHTS' })}
+                  onClick={navigateToInsights}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="View Insights"
                 >
                   <PieChartIcon className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => navigate({ type: 'HISTORY' })}
+                  onClick={navigateToHistory}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="History"
                 >
@@ -129,7 +139,7 @@ function AppContent() {
 
               {/* Categories */}
               <div className="mb-6">
-                <CategoryList onCategoryClick={(id) => navigate({ type: 'CATEGORY', categoryId: id })} />
+                <CategoryList onCategoryClick={navigateToCategory} />
               </div>
 
               <div className="h-20"></div> {/* Spacer for FAB */}
