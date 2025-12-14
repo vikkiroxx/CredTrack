@@ -7,6 +7,7 @@ import { AddCategoryForm } from './components/category/AddCategoryForm';
 import { AddSpendForm } from './components/spends/AddSpendForm';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SpendingPieChart } from './components/dashboard/SpendingPieChart';
+import { MonthlySummary } from './components/dashboard/MonthlySummary';
 import { Plus, PieChart as PieChartIcon, ArrowLeft } from 'lucide-react';
 
 type ViewState =
@@ -56,8 +57,11 @@ export default function App() {
           <main className="flex-1 p-4 overflow-y-auto max-w-md mx-auto w-full">
             {view.type === 'HOME' ? (
               <>
+                <MonthlySummary />
+
                 {/* Categories */}
                 <div className="mb-6">
+                  <h3 className="text-lg font-bold mb-3 px-1">Your Categories</h3>
                   <CategoryList onCategoryClick={(id) => setView({ type: 'CATEGORY', categoryId: id })} />
                 </div>
 
