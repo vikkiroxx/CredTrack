@@ -13,6 +13,7 @@ export function AddSpendForm({ onClose, defaultCategoryId }: { onClose: () => vo
     const [subcategory, setSubcategory] = useState('');
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [dueDate, setDueDate] = useState(''); // New State for Due Date
+    const [emiEndDate, setEmiEndDate] = useState(''); // New State for End Date
     const [isRecurring, setIsRecurring] = useState(false);
     const [isPaid, setIsPaid] = useState(false);
 
@@ -34,6 +35,7 @@ export function AddSpendForm({ onClose, defaultCategoryId }: { onClose: () => vo
             date: new Date(date).toISOString(),
             isRecurring,
             dueDate: isRecurring && dueDate ? new Date(dueDate).toISOString() : undefined,
+            emiEndDate: isRecurring && emiEndDate ? new Date(emiEndDate).toISOString() : undefined,
             isPaid,
         });
         onClose();
@@ -191,16 +193,28 @@ export function AddSpendForm({ onClose, defaultCategoryId }: { onClose: () => vo
 
                     {/* Recurring Due Date (Conditional) */}
                     {isRecurring && (
-                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200">
-                            <label className="text-sm font-medium text-muted-foreground">Next Payment Date</label>
-                            <div className="relative mt-1">
-                                <input
-                                    type="date"
-                                    value={dueDate}
-                                    onChange={(e) => setDueDate(e.target.value)}
-                                    className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 pl-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                                <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200 grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Next Payment</label>
+                                <div className="relative mt-1">
+                                    <input
+                                        type="date"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Ends On</label>
+                                <div className="relative mt-1">
+                                    <input
+                                        type="date"
+                                        value={emiEndDate}
+                                        onChange={(e) => setEmiEndDate(e.target.value)}
+                                        className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}

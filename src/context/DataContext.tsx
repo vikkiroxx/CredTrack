@@ -21,6 +21,7 @@ export type Spend = {
     isPaid: boolean;
     isRecurring: boolean;
     dueDate?: string;
+    emiEndDate?: string; // ISO string for when the recurring payment stops
     createdAt: string;
 };
 

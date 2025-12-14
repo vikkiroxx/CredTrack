@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { format, isSameMonth, parseISO, differenceInDays, addDays } from 'date-fns';
+import { format, isSameMonth, parseISO, differenceInDays, addDays, isAfter } from 'date-fns';
 import { TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -71,6 +71,13 @@ export function MonthlySummary() {
                 const d = new Date(dueDate); d.setHours(0, 0, 0, 0);
                 const t = new Date(today); t.setHours(0, 0, 0, 0);
                 const nw = new Date(nextWeek); nw.setHours(23, 59, 59, 999);
+
+                // Check End Date
+                if (spend.emiEndDate) {
+                    const endDate = parseISO(spend.emiEndDate);
+                    const e = new Date(endDate); e.setHours(23, 59, 59, 999);
+                    if (isAfter(t, e)) return;
+                }
 
                 if (d >= t && d <= nw) {
                     items.push({
