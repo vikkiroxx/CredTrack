@@ -57,8 +57,10 @@ export function CategoryList({ onCategoryClick }: { onCategoryClick: (id: string
                                 </button>
                             </div>
                         </div>
-                    ))}
-            </div>
+                        </div>
+            );
+                })}
         </div>
+        </div >
     );
 }
