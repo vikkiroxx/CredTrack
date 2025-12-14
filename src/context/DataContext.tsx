@@ -110,11 +110,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // --- Actions ---
 
+    const sanitizeForFirestore = (obj: any): any => {
+        if (typeof obj !== 'object' || obj === null) return obj;
+        if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+        return Object.entries(obj).reduce((acc, [key, value]) => {
+            if (value !== undefined) {
+                acc[key] = sanitizeForFirestore(value);
+            }
+            return acc;
+        }, {} as any);
+    };
+
     const saveCategories = async (newCategories: Category[]) => {
         setCategories(newCategories); // Optimistic Update
         if (user) {
             try {
-                await setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: newCategories });
+                await setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: sanitizeForFirestore(newCategories) });
             } catch (error) {
                 console.error("Error saving categories to cloud:", error);
                 // Optionally revert state here if needed
@@ -126,7 +137,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setSpends(newSpends); // Optimistic Update
         if (user) {
             try {
-                await setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: newSpends });
+                await setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: sanitizeForFirestore(newSpends) });
             } catch (error) {
                 console.error("Error saving spends to cloud:", error);
             }

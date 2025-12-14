@@ -16,3 +16,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
+// Optional: Global setting as backup
+// @ts-expect-error - ignoreUndefinedProperties is valid in recent SDKs but types might lag
+if (db._settings) db._settings.ignoreUndefinedProperties = true;
