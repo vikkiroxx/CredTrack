@@ -56,7 +56,7 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const navigateToHome = () => window.location.hash = '#/';
+
   const navigateToInsights = () => window.location.hash = '#/insights';
   const navigateToHistory = () => window.location.hash = '#/history';
   const navigateToCategory = (id: string) => window.location.hash = `#/category/${id}`;
