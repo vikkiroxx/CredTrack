@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Label } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 
 export function SpendingPieChart() {
@@ -62,6 +62,24 @@ export function SpendingPieChart() {
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
+                            <Label
+                                content={({ viewBox }) => {
+                                    if (viewBox && typeof viewBox === 'object' && 'cx' in viewBox && 'cy' in viewBox) {
+                                        const { cx, cy } = viewBox;
+                                        return (
+                                            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
+                                                <tspan x={cx} y={cy - 10} fontSize="12" fill="currentColor" className="text-muted-foreground font-medium">
+                                                    Total
+                                                </tspan>
+                                                <tspan x={cx} y={cy + 15} fontSize="20" fontWeight="bold" fill="currentColor" className="text-foreground">
+                                                    ₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </tspan>
+                                            </text>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
                         </Pie>
                         <Tooltip
                             formatter={(value: number) => [`₹${value}`, 'Spent']}
@@ -76,11 +94,6 @@ export function SpendingPieChart() {
                         <Legend />
                     </PieChart>
                 </ResponsiveContainer>
-                {/* Center Text */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <p className="text-xs text-muted-foreground font-medium">Total</p>
-                    <p className="text-xl font-bold">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
             </div>
         </div>
     );
