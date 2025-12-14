@@ -71,6 +71,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                                 onChange={(e) => setAmount(e.target.value)}
                                 className="w-full bg-muted/50 border border-input rounded-lg pl-8 pr-4 py-3 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                 autoFocus
+                                step="0.01"
                             />
                         </div>
                     </div>
