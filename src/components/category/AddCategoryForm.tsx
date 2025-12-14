@@ -25,12 +25,14 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
     const [name, setName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[5]); // Default blue
     const [nextBillDate, setNextBillDate] = useState('');
+    const [group, setGroup] = useState('');
 
     // Pre-fill form if editing
     useEffect(() => {
         if (existingCategory) {
             setName(existingCategory.name);
             setSelectedColor(existingCategory.color);
+            setGroup(existingCategory.group || '');
             // Format ISO string to YYYY-MM-DD for input type="date"
             if (existingCategory.nextBillDate) {
                 setNextBillDate(existingCategory.nextBillDate.split('T')[0]);
@@ -47,11 +49,12 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
             updateCategory(existingCategory.id, {
                 name: name.trim(),
                 color: selectedColor,
+                group: group.trim() || undefined,
                 nextBillDate: nextBillDate ? new Date(nextBillDate).toISOString() : undefined
             });
         } else {
             // Create functionality
-            addCategory(name.trim(), selectedColor, nextBillDate ? new Date(nextBillDate).toISOString() : undefined);
+            addCategory(name.trim(), selectedColor, group.trim() || undefined, nextBillDate ? new Date(nextBillDate).toISOString() : undefined);
         }
 
         onClose();
@@ -107,6 +110,24 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
                             onChange={(e) => setNextBillDate(e.target.value)}
                             className="w-full bg-muted/50 border border-input rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                         />
+                    </div>
+
+                    {/* Group Name */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Group / Bank Name (Optional)</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. HDFC, OneCard (for grouping)"
+                            value={group}
+                            onChange={(e) => setGroup(e.target.value)}
+                            className="w-full bg-muted/50 border border-input rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            list="existing-groups"
+                        />
+                        <datalist id="existing-groups">
+                            {Array.from(new Set(categories.map(c => c.group || c.name.split(' ')[0]))).map(g => (
+                                <option key={g} value={g} />
+                            ))}
+                        </datalist>
                     </div>
 
                     <button

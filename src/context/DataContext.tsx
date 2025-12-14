@@ -9,6 +9,7 @@ export type Category = {
     id: string;
     name: string;
     color: string;
+    group?: string;
     nextBillDate?: string;
     icon?: string;
     createdAt: string;
@@ -31,7 +32,7 @@ export type Spend = {
 type DataContextType = {
     categories: Category[];
     spends: Spend[];
-    addCategory: (name: string, color: string, nextBillDate?: string) => Promise<void>;
+    addCategory: (name: string, color: string, group?: string, nextBillDate?: string) => Promise<void>;
     updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
     deleteCategory: (id: string) => Promise<void>;
     addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => Promise<void>;
@@ -145,11 +146,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const addCategory = async (name: string, color: string, nextBillDate?: string) => {
+    const addCategory = async (name: string, color: string, group?: string, nextBillDate?: string) => {
         const newCategory: Category = {
             id: uuidv4(),
             name,
             color,
+            group,
             nextBillDate,
             createdAt: new Date().toISOString(),
         };
