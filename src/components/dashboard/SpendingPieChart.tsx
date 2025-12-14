@@ -44,7 +44,10 @@ export function SpendingPieChart() {
 
     return (
         <div className="w-full bg-card rounded-xl border border-border p-4 shadow-sm">
-            <h2 className="text-lg font-bold mb-4 text-center">Spending Breakdown</h2>
+            <h2 className="text-lg font-bold mb-1 text-center">Spending Breakdown</h2>
+            <p className="text-3xl font-bold text-center text-primary mb-6">
+                ₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
 
             <div className="h-64 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
@@ -75,12 +78,6 @@ export function SpendingPieChart() {
                         />
                     </PieChart>
                 </ResponsiveContainer>
-
-                {/* Center Text - Absolutely centered relative to h-64 container */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-xs text-muted-foreground font-medium translate-y-[-2px]">Total</p>
-                    <p className="text-xl font-bold text-foreground">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
             </div>
 
             {/* Custom Legend */}
