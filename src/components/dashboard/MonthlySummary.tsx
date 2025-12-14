@@ -3,8 +3,9 @@ import { useData } from '../../context/DataContext';
 import { format, isSameMonth, parseISO, differenceInDays, addDays, isAfter } from 'date-fns';
 import { TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import type { InitialSpendData } from '../spends/AddSpendForm';
 
-export function MonthlySummary() {
+export function MonthlySummary({ onPayClick }: { onPayClick: (data?: InitialSpendData) => void }) {
     const { spends, categories } = useData();
 
     const today = new Date();
@@ -28,16 +29,15 @@ export function MonthlySummary() {
     }, [spends]);
 
     // Find Upcoming Bills (Next 7 Days)
-    // 1. Categories with nextBillDate
-    // 2. Spending (EMIs) with dueDate
     const upcomingItems = useMemo(() => {
         const items: Array<{
-            id: string;
+            id: string; // Spend ID (EMI) or Category ID (Bill)
             name: string;
             date: Date;
             type: 'bill' | 'emi';
             amount?: number;
             color?: string;
+            categoryId: string; // Needed for Pay function
         }> = [];
 
         const nextWeek = addDays(today, 7);
@@ -46,7 +46,6 @@ export function MonthlySummary() {
         categories.forEach(cat => {
             if (cat.nextBillDate) {
                 const billDate = parseISO(cat.nextBillDate);
-                // reset time for accurate day comparison
                 const d = new Date(billDate); d.setHours(0, 0, 0, 0);
                 const t = new Date(today); t.setHours(0, 0, 0, 0);
                 const nw = new Date(nextWeek); nw.setHours(23, 59, 59, 999);
@@ -55,10 +54,11 @@ export function MonthlySummary() {
                 if (d >= t && d <= nw) {
                     items.push({
                         id: cat.id,
-                        name: `${cat.name} Bill`,
+                        name: `${cat.name}`,
                         date: billDate,
                         type: 'bill',
-                        color: cat.color
+                        color: cat.color,
+                        categoryId: cat.id
                     });
                 }
             }
@@ -85,7 +85,8 @@ export function MonthlySummary() {
                         name: spend.description,
                         date: dueDate,
                         type: 'emi',
-                        amount: spend.amount
+                        amount: spend.amount,
+                        categoryId: spend.categoryId
                     });
                 }
             }
@@ -126,7 +127,7 @@ export function MonthlySummary() {
                         {upcomingItems.map((item) => {
                             const days = differenceInDays(item.date, today);
                             return (
-                                <div key={item.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                                <div key={item.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg group">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={cn("w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold", item.type === 'bill' ? "text-white" : "bg-primary/10 text-primary")}
@@ -141,9 +142,21 @@ export function MonthlySummary() {
                                             </p>
                                         </div>
                                     </div>
-                                    {item.amount && (
-                                        <p className="text-sm font-bold">₹{item.amount.toLocaleString()}</p>
-                                    )}
+                                    <div className="flex items-center gap-3">
+                                        {item.amount && (
+                                            <p className="text-sm font-bold">₹{item.amount.toLocaleString()}</p>
+                                        )}
+                                        <button
+                                            onClick={() => onPayClick({
+                                                amount: item.amount,
+                                                description: item.name,
+                                                categoryId: item.categoryId
+                                            })}
+                                            className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full hover:bg-primary/90 transition-colors shadow-sm active:scale-95"
+                                        >
+                                            Pay
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

@@ -4,12 +4,19 @@ import { X, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 
-export function AddSpendForm({ onClose, defaultCategoryId }: { onClose: () => void, defaultCategoryId?: string }) {
+export type InitialSpendData = {
+    amount?: number;
+    description?: string;
+    categoryId?: string;
+    dueDate?: string; // If paying a bill, might want to link it?
+};
+
+export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onClose: () => void, defaultCategoryId?: string, initialData?: InitialSpendData }) {
     const { categories, addSpend } = useData();
 
-    const [amount, setAmount] = useState('');
-    const [description, setDescription] = useState('');
-    const [categoryId, setCategoryId] = useState(defaultCategoryId || categories[0]?.id || '');
+    const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+    const [description, setDescription] = useState(initialData?.description || '');
+    const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultCategoryId || categories[0]?.id || '');
     const [subcategory, setSubcategory] = useState('');
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [dueDate, setDueDate] = useState(''); // New State for Due Date

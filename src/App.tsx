@@ -6,24 +6,38 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { CategoryList } from './components/category/CategoryList';
 import { CategoryDetail } from './components/category/CategoryDetail';
 import { AddCategoryForm } from './components/category/AddCategoryForm';
-import { AddSpendForm } from './components/spends/AddSpendForm';
+import { AddSpendForm, type InitialSpendData } from './components/spends/AddSpendForm';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SpendingPieChart } from './components/dashboard/SpendingPieChart';
 import { MonthlySummary } from './components/dashboard/MonthlySummary';
 import { DataManagement } from './components/settings/DataManagement';
-import { Plus, PieChart as PieChartIcon, ArrowLeft, Settings } from 'lucide-react';
+import { SpendHistory } from './components/spends/SpendHistory';
+import { Plus, PieChart as PieChartIcon, ArrowLeft, Settings, Search } from 'lucide-react';
+import { MonthlyBarChart } from './components/dashboard/MonthlyBarChart';
 
 type ViewState =
   | { type: 'HOME' }
   | { type: 'CATEGORY', categoryId: string }
-  | { type: 'INSIGHTS' };
+  | { type: 'INSIGHTS' }
+  | { type: 'HISTORY' };
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [view, setView] = useState<ViewState>({ type: 'HOME' });
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSpendModalOpen, setIsSpendModalOpen] = useState(false);
+  const [spendInitialData, setSpendInitialData] = useState<InitialSpendData | undefined>(undefined);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const openAddSpend = (data?: InitialSpendData) => {
+    setSpendInitialData(data);
+    setIsSpendModalOpen(true);
+  };
+
+  const closeAddSpend = () => {
+    setIsSpendModalOpen(false);
+    setSpendInitialData(undefined); // Clear data on close
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
@@ -62,6 +76,13 @@ function AppContent() {
                   <PieChartIcon className="w-5 h-5" />
                 </button>
                 <button
+                  onClick={() => setView({ type: 'HISTORY' })}
+                  className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                  title="History"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+                <button
                   onClick={() => setIsSettingsOpen(true)}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="Settings"
@@ -78,11 +99,10 @@ function AppContent() {
         <main className="flex-1 p-4 overflow-y-auto max-w-md mx-auto w-full">
           {view.type === 'HOME' ? (
             <>
-              <MonthlySummary />
+              <MonthlySummary onPayClick={openAddSpend} />
 
               {/* Categories */}
               <div className="mb-6">
-                <h3 className="text-lg font-bold mb-3 px-1">Your Categories</h3>
                 <CategoryList onCategoryClick={(id) => setView({ type: 'CATEGORY', categoryId: id })} />
               </div>
 
@@ -90,8 +110,11 @@ function AppContent() {
             </>
           ) : view.type === 'INSIGHTS' ? (
             <div className="space-y-6">
+              <MonthlyBarChart />
               <SpendingPieChart />
             </div>
+          ) : view.type === 'HISTORY' ? (
+            <SpendHistory />
           ) : (
             <CategoryDetail
               categoryId={view.categoryId}
@@ -117,7 +140,7 @@ function AppContent() {
         )}
 
         {isSpendModalOpen && (
-          <AddSpendForm onClose={() => setIsSpendModalOpen(false)} />
+          <AddSpendForm onClose={closeAddSpend} initialData={spendInitialData} />
         )}
 
         {isSettingsOpen && (
