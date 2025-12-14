@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --radius: var(--radius);
+}
+
+@layer base {
+  :root {
+    /* Light Mode (Green Tinted) */
+    --background: hsl(140 20% 98%);
+    --foreground: hsl(140 10% 10%);
+
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(140 10% 10%);
+
+    --primary: hsl(142 76% 36%);
+    /* Green-600 */
+    --primary-foreground: hsl(355 100% 100%);
+
+    --muted: hsl(140 20% 96%);
+    --muted-foreground: hsl(140 5% 40%);
+
+    --border: hsl(140 20% 90%);
+    --input: hsl(140 20% 90%);
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark Mode (Green Tinted) */
+    --background: hsl(140 10% 10%);
+    --foreground: hsl(140 10% 90%);
+
+    --card: hsl(140 10% 12%);
+    --card-foreground: hsl(140 10% 90%);
+
+    --primary: hsl(142 70% 50%);
+    /* Green-500 */
+    --primary-foreground: hsl(140 10% 10%);
+
+    --muted: hsl(140 10% 15%);
+    --muted-foreground: hsl(140 5% 60%);
+
+    --border: hsl(140 10% 20%);
+    --input: hsl(140 10% 20%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
