@@ -128,7 +128,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 await setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: sanitizeForFirestore(newCategories) });
             } catch (error) {
                 console.error("Error saving categories to cloud:", error);
-                // Optionally revert state here if needed
+                throw error; // Rethrow to notify UI
             }
         }
     };
@@ -140,6 +140,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 await setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: sanitizeForFirestore(newSpends) });
             } catch (error) {
                 console.error("Error saving spends to cloud:", error);
+                throw error; // Rethrow to notify UI
             }
         }
     };
