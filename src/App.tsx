@@ -29,6 +29,32 @@ function AppContent() {
   const [spendInitialData, setSpendInitialData] = useState<InitialSpendData | undefined>(undefined);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Sync with Browser History
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        setView(event.state);
+      } else {
+        setView({ type: 'HOME' });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (newView: ViewState) => {
+    window.history.pushState(newView, '', '');
+    setView(newView);
+  };
+
+  const goBack = () => {
+    // Check if we can go back? Browsers don't expose stack length securely.
+    // But safely, we can just call back(). If nowhere to go, it does nothing or exits (which is fine if at root).
+    // However, if we are at root, we shouldn't show back button anyway.
+    window.history.back();
+  };
+
   const openAddSpend = (data?: InitialSpendData) => {
     setSpendInitialData(data);
     setIsSpendModalOpen(true);
@@ -56,11 +82,11 @@ function AppContent() {
             <h1 className="text-xl font-bold text-primary tracking-tight">CredTrack</h1>
           ) : (
             <div className="flex items-center gap-2">
-              <button onClick={() => setView({ type: 'HOME' })} className="p-1 hover:bg-muted rounded-full">
+              <button onClick={goBack} className="p-1 hover:bg-muted rounded-full">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h1 className="text-xl font-bold text-primary tracking-tight">
-                {view.type === 'INSIGHTS' ? 'Insights' : 'CredTrack'}
+                {view.type === 'INSIGHTS' ? 'Insights' : view.type === 'HISTORY' ? 'History' : 'CredTrack'}
               </h1>
             </div>
           )}
@@ -69,14 +95,14 @@ function AppContent() {
             {view.type === 'HOME' && (
               <>
                 <button
-                  onClick={() => setView({ type: 'INSIGHTS' })}
+                  onClick={() => navigate({ type: 'INSIGHTS' })}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="View Insights"
                 >
                   <PieChartIcon className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => setView({ type: 'HISTORY' })}
+                  onClick={() => navigate({ type: 'HISTORY' })}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="History"
                 >
@@ -103,7 +129,7 @@ function AppContent() {
 
               {/* Categories */}
               <div className="mb-6">
-                <CategoryList onCategoryClick={(id) => setView({ type: 'CATEGORY', categoryId: id })} />
+                <CategoryList onCategoryClick={(id) => navigate({ type: 'CATEGORY', categoryId: id })} />
               </div>
 
               <div className="h-20"></div> {/* Spacer for FAB */}
@@ -118,7 +144,7 @@ function AppContent() {
           ) : (
             <CategoryDetail
               categoryId={view.categoryId}
-              onBack={() => setView({ type: 'HOME' })}
+              onBack={goBack}
             />
           )}
         </main>
