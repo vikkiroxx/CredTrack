@@ -8,7 +8,8 @@ import { AddSpendForm } from './components/spends/AddSpendForm';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SpendingPieChart } from './components/dashboard/SpendingPieChart';
 import { MonthlySummary } from './components/dashboard/MonthlySummary';
-import { Plus, PieChart as PieChartIcon, ArrowLeft } from 'lucide-react';
+import { DataManagement } from './components/settings/DataManagement';
+import { Plus, PieChart as PieChartIcon, ArrowLeft, Settings } from 'lucide-react';
 
 type ViewState =
   | { type: 'HOME' }
@@ -19,6 +20,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>({ type: 'HOME' });
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSpendModalOpen, setIsSpendModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
     <ThemeProvider>
@@ -41,13 +43,22 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               {view.type === 'HOME' && (
-                <button
-                  onClick={() => setView({ type: 'INSIGHTS' })}
-                  className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                  title="View Insights"
-                >
-                  <PieChartIcon className="w-5 h-5" />
-                </button>
+                <>
+                  <button
+                    onClick={() => setView({ type: 'INSIGHTS' })}
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                    title="View Insights"
+                  >
+                    <PieChartIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                    title="Settings"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                </>
               )}
               <ThemeToggle />
             </div>
@@ -98,8 +109,12 @@ export default function App() {
           {isSpendModalOpen && (
             <AddSpendForm onClose={() => setIsSpendModalOpen(false)} />
           )}
+
+          {isSettingsOpen && (
+            <DataManagement onClose={() => setIsSettingsOpen(false)} />
+          )}
         </div>
       </DataProvider>
     </ThemeProvider>
-  )
+  );
 }

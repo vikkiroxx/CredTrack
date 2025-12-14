@@ -33,6 +33,7 @@ type DataContextType = {
     addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => void;
     updateSpend: (id: string, updates: Partial<Spend>) => void;
     deleteSpend: (id: string) => void;
+    importData: (data: { categories: Category[], spends: Spend[] }) => void;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -94,8 +95,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setSpends(prev => prev.filter(s => s.id !== id));
     };
 
+    const importData = (data: { categories: Category[], spends: Spend[] }) => {
+        // Basic validation could go here
+        if (Array.isArray(data.categories) && Array.isArray(data.spends)) {
+            setCategories(data.categories);
+            setSpends(data.spends);
+            alert('Data imported successfully!');
+        } else {
+            alert('Invalid data format.');
+        }
+    };
+
     return (
-        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend }}>
+        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, importData }}>
             {children}
         </DataContext.Provider>
     );
