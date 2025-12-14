@@ -77,9 +77,9 @@ export function SpendingPieChart() {
                     </PieChart>
                 </ResponsiveContainer>
                 {/* Center Text */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-4">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                     <p className="text-xs text-muted-foreground font-medium">Total</p>
-                    <p className="text-xl font-bold">₹{totalSpent.toLocaleString()}</p>
+                    <p className="text-xl font-bold">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
             </div>
         </div>
