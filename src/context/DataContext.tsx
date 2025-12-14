@@ -31,12 +31,12 @@ export type Spend = {
 type DataContextType = {
     categories: Category[];
     spends: Spend[];
-    addCategory: (name: string, color: string, nextBillDate?: string) => void;
-    updateCategory: (id: string, updates: Partial<Category>) => void;
-    deleteCategory: (id: string) => void;
-    addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => void;
-    updateSpend: (id: string, updates: Partial<Spend>) => void;
-    deleteSpend: (id: string) => void;
+    addCategory: (name: string, color: string, nextBillDate?: string) => Promise<void>;
+    updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
+    deleteCategory: (id: string) => Promise<void>;
+    addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => Promise<void>;
+    updateSpend: (id: string, updates: Partial<Spend>) => Promise<void>;
+    deleteSpend: (id: string) => Promise<void>;
     importData: (data: { categories: Category[], spends: Spend[] }) => void;
     clearAllData: () => Promise<void>;
 };
@@ -108,21 +108,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // --- Actions ---
 
-    const saveCategories = (newCategories: Category[]) => {
+    // --- Actions ---
+
+    const saveCategories = async (newCategories: Category[]) => {
         setCategories(newCategories); // Optimistic Update
         if (user) {
-            setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: newCategories });
+            try {
+                await setDoc(doc(db, 'users', user.uid, 'data', 'categories'), { list: newCategories });
+            } catch (error) {
+                console.error("Error saving categories to cloud:", error);
+                // Optionally revert state here if needed
+            }
         }
     };
 
-    const saveSpends = (newSpends: Spend[]) => {
+    const saveSpends = async (newSpends: Spend[]) => {
         setSpends(newSpends); // Optimistic Update
         if (user) {
-            setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: newSpends });
+            try {
+                await setDoc(doc(db, 'users', user.uid, 'data', 'spends'), { list: newSpends });
+            } catch (error) {
+                console.error("Error saving spends to cloud:", error);
+            }
         }
     };
 
-    const addCategory = (name: string, color: string, nextBillDate?: string) => {
+    const addCategory = async (name: string, color: string, nextBillDate?: string) => {
         const newCategory: Category = {
             id: uuidv4(),
             name,
@@ -130,32 +141,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             nextBillDate,
             createdAt: new Date().toISOString(),
         };
-        saveCategories([...categories, newCategory]);
+        await saveCategories([...categories, newCategory]);
     };
 
-    const updateCategory = (id: string, updates: Partial<Category>) => {
-        saveCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c));
+    const updateCategory = async (id: string, updates: Partial<Category>) => {
+        await saveCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c));
     };
 
-    const deleteCategory = (id: string) => {
-        saveCategories(categories.filter(c => c.id !== id));
+    const deleteCategory = async (id: string) => {
+        await saveCategories(categories.filter(c => c.id !== id));
     };
 
-    const addSpend = (spendData: Omit<Spend, 'id' | 'createdAt'>) => {
+    const addSpend = async (spendData: Omit<Spend, 'id' | 'createdAt'>) => {
         const newSpend: Spend = {
             ...spendData,
             id: uuidv4(),
             createdAt: new Date().toISOString(),
         };
-        saveSpends([...spends, newSpend]);
+        await saveSpends([...spends, newSpend]);
     };
 
-    const updateSpend = (id: string, updates: Partial<Spend>) => {
-        saveSpends(spends.map(s => s.id === id ? { ...s, ...updates } : s));
+    const updateSpend = async (id: string, updates: Partial<Spend>) => {
+        await saveSpends(spends.map(s => s.id === id ? { ...s, ...updates } : s));
     };
 
-    const deleteSpend = (id: string) => {
-        saveSpends(spends.filter(s => s.id !== id));
+    const deleteSpend = async (id: string) => {
+        await saveSpends(spends.filter(s => s.id !== id));
     };
 
     const importData = (data: { categories: Category[], spends: Spend[] }) => {

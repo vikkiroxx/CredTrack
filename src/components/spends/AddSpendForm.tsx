@@ -30,22 +30,40 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
         'Travel', 'Entertainment', 'Health', 'Education', 'Rent'
     ];
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!amount || !categoryId || !description) return;
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-        addSpend({
-            amount: parseFloat(amount),
-            description,
-            categoryId,
-            subcategory: subcategory.trim() || undefined,
-            date: new Date(date).toISOString(),
-            isRecurring,
-            dueDate: isRecurring && dueDate ? new Date(dueDate).toISOString() : undefined,
-            emiEndDate: isRecurring && emiEndDate ? new Date(emiEndDate).toISOString() : undefined,
-            isPaid,
-        });
-        onClose();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log("Submitting Spend:", { amount, description, categoryId });
+
+        if (!amount || !categoryId || !description) {
+            alert(`Please fill all fields.`);
+            return;
+        }
+
+        if (isSubmitting) return; // Prevent double submit
+        setIsSubmitting(true);
+
+        try {
+            console.log("Calling addSpend...");
+            await addSpend({
+                amount: parseFloat(amount),
+                description,
+                categoryId,
+                subcategory: subcategory.trim() || undefined,
+                date: new Date(date).toISOString(),
+                isRecurring,
+                dueDate: isRecurring && dueDate ? new Date(dueDate).toISOString() : undefined,
+                emiEndDate: isRecurring && emiEndDate ? new Date(emiEndDate).toISOString() : undefined,
+                isPaid,
+            });
+            console.log("Spend Added Successfully");
+            onClose();
+        } catch (error) {
+            console.error("Error adding spend:", error);
+            alert("Error adding spend: " + (error as Error).message);
+            setIsSubmitting(false); // Re-enable on error
+        }
     };
 
     return (
@@ -53,12 +71,15 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
             <div className="bg-card text-card-foreground w-full max-w-sm rounded-xl border border-border shadow-xl p-6 animate-in fade-in zoom-in duration-200 lg:max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">Add Spend</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
+                    <button onClick={onClose} disabled={isSubmitting} className="p-2 hover:bg-muted rounded-full transition-colors disabled:opacity-50">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* ... fields ... */}
+
+                    {/* (This part is omitted for brevity in search replacement, but effectively I am targeting the function start and return) */}
                     {/* Amount Input */}
                     <div>
                         <label className="text-sm font-medium text-muted-foreground">Amount</label>
@@ -229,10 +250,15 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
 
                     <button
                         type="submit"
-                        disabled={!amount || !categoryId}
-                        className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                        disabled={!amount || !categoryId || isSubmitting}
+                        className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
-                        Add Spend
+                        {isSubmitting ? (
+                            <>
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : "Add Spend"}
                     </button>
                 </form>
             </div>
