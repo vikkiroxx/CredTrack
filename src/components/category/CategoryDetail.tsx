@@ -38,53 +38,52 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
                 <div className="flex-1">
                     <div className="flex items-center justify-between">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                        <div>
-                            <h2 className="text-xl font-bold leading-none">{category.name}</h2>
-                            {category.cardNumber && (
-                                <p className="text-xs text-muted-foreground font-mono mt-1 opacity-80 tracking-wide">
-                                    {category.cardNumber}
+                        <div className="flex items-center gap-4">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                            <div>
+                                <h2 className="text-xl font-bold leading-none">{category.name}</h2>
+                                {category.cardNumber && (
+                                    <p className="text-xs text-muted-foreground font-mono mt-1 opacity-80 tracking-wide">
+                                        {category.cardNumber}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setIsEditOpen(true)}>
+                                {/* Small edit indicator */}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                            </div>
+                        </div>
+
+                        <button onClick={() => setIsEditOpen(true)} className={cn("text-right", category.nextBillDate && "cursor-pointer hover:opacity-80")}>
+                            {category.nextBillDate ? (
+                                <>
+                                    <p className="text-xs text-muted-foreground">Next Bill</p>
+                                    <p className={cn("text-sm font-bold", (daysLeft !== null && daysLeft <= 5) ? "text-red-500" : "text-foreground")}>
+                                        {format(parseISO(category.nextBillDate), 'dd MMM')}
+                                        {daysLeft !== null && (
+                                            <span className="text-xs font-normal text-muted-foreground ml-1">
+                                                ({daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? 'Today' : `${Math.abs(daysLeft)}d ago`})
+                                            </span>
+                                        )}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    Set Bill Date
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                 </p>
                             )}
-                        </div>
-                        <div className="opacity-50 group-hover:opacity-100 transition-opacity self-start mt-1">
-                            {/* Small edit indicator */}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
-                        </div>
+                        </button>
                     </div>
-
-                    <button onClick={() => setIsEditOpen(true)} className={cn("text-right", category.nextBillDate && "cursor-pointer hover:opacity-80")}>
-                        {category.nextBillDate ? (
-                            <>
-                                <p className="text-xs text-muted-foreground">Next Bill</p>
-                                <p className={cn("text-sm font-bold", (daysLeft !== null && daysLeft <= 5) ? "text-red-500" : "text-foreground")}>
-                                    {format(parseISO(category.nextBillDate), 'dd MMM')}
-                                    {daysLeft !== null && (
-                                        <span className="text-xs font-normal text-muted-foreground ml-1">
-                                            ({daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? 'Today' : `${Math.abs(daysLeft)}d ago`})
-                                        </span>
-                                    )}
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                Set Bill Date
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
-                            </p>
-                        )}
-                    </button>
                 </div>
             </div>
-        </div>
 
-            {
-        isEditOpen && (
-            <AddCategoryForm
-                onClose={() => setIsEditOpen(false)}
-                editCategoryId={categoryId}
-            />
-        )
-    }
+            {isEditOpen && (
+                <AddCategoryForm
+                    onClose={() => setIsEditOpen(false)}
+                    editCategoryId={categoryId}
+                />
+            )}
 
             <SubcategoryPieChart categoryId={categoryId} />
 
@@ -104,22 +103,20 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
             <SpendList filterCategoryId={categoryId} />
 
-    {/* Floating Action Button for this Category */ }
-    <button
-        onClick={() => setIsAddSpendOpen(true)}
-        className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all active:scale-90 z-20 flex items-center justify-center"
-    >
-        <Plus className="w-6 h-6" />
-    </button>
+            {/* Floating Action Button for this Category */}
+            <button
+                onClick={() => setIsAddSpendOpen(true)}
+                className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all active:scale-90 z-20 flex items-center justify-center"
+            >
+                <Plus className="w-6 h-6" />
+            </button>
 
-    {
-        isAddSpendOpen && (
-            <AddSpendForm
-                onClose={() => setIsAddSpendOpen(false)}
-                defaultCategoryId={categoryId}
-            />
-        )
-    }
-        </div >
+            {isAddSpendOpen && (
+                <AddSpendForm
+                    onClose={() => setIsAddSpendOpen(false)}
+                    defaultCategoryId={categoryId}
+                />
+            )}
+        </div>
     );
 }

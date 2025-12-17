@@ -57,18 +57,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // ... (existing code) ...
 
-    const addCategory = async (name: string, color: string, group?: string, cardNumber?: string, nextBillDate?: string) => {
-        const newCategory: Category = {
-            id: uuidv4(),
-            name,
-            color,
-            group,
-            cardNumber,
-            nextBillDate,
-            createdAt: new Date().toISOString(),
-        };
-        await saveCategories([...categories, newCategory]);
-    };
+
 
     const [spends, setSpends] = useState<Spend[]>(() => {
         const saved = localStorage.getItem('credtrack_spends');
