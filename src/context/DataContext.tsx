@@ -38,6 +38,7 @@ type DataContextType = {
     addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => Promise<void>;
     updateSpend: (id: string, updates: Partial<Spend>) => Promise<void>;
     deleteSpend: (id: string) => Promise<void>;
+    markAllAsPaid: (categoryId: string) => Promise<void>;
     importData: (data: { categories: Category[], spends: Spend[] }) => void;
     clearAllData: () => Promise<void>;
 };
@@ -146,6 +147,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const markAllAsPaid = async (categoryId: string) => {
+        const updatedSpends = spends.map(spend => {
+            if (spend.categoryId === categoryId && !spend.isPaid) {
+                return { ...spend, isPaid: true };
+            }
+            return spend;
+        });
+        await saveSpends(updatedSpends);
+    };
+
     const addCategory = async (name: string, color: string, group?: string, nextBillDate?: string) => {
         const newCategory: Category = {
             id: uuidv4(),
@@ -215,7 +226,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, importData, clearAllData }}>
+        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, markAllAsPaid, importData, clearAllData }}>
             {children}
         </DataContext.Provider>
     );

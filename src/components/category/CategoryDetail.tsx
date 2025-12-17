@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { SpendList } from '../spends/SpendList';
 import { AddSpendForm } from '../spends/AddSpendForm';
 import { SubcategoryPieChart } from '../dashboard/SubcategoryPieChart';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { cn } from '../../lib/utils';
 
@@ -14,7 +14,7 @@ type CategoryDetailProps = {
 };
 
 export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
-    const { categories } = useData();
+    const { categories, markAllAsPaid } = useData();
     const [isAddSpendOpen, setIsAddSpendOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false); // State for edit modal
 
@@ -79,6 +79,20 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
             )}
 
             <SubcategoryPieChart categoryId={categoryId} />
+
+            <div className="flex justify-end mb-4 px-1">
+                <button
+                    onClick={() => {
+                        if (confirm('Are you sure you want to mark ALL pending spends in this category as PAID?')) {
+                            markAllAsPaid(categoryId);
+                        }
+                    }}
+                    className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                    <CheckCircle className="w-4 h-4" />
+                    Mark All as Paid
+                </button>
+            </div>
 
             <SpendList filterCategoryId={categoryId} />
 
