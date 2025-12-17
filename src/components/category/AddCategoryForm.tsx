@@ -138,6 +138,8 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
                         <label className="text-sm font-medium text-muted-foreground">Card Number / Last 4 Digits (Optional)</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
                             placeholder="e.g. 1234 5678 9012 3456 or Just Last 4"
                             value={cardNumber}
                             onChange={(e) => setCardNumber(e.target.value)}
