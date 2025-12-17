@@ -26,6 +26,7 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
     const [selectedColor, setSelectedColor] = useState(COLORS[5]); // Default blue
     const [nextBillDate, setNextBillDate] = useState('');
     const [group, setGroup] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
 
     // Pre-fill form if editing
     useEffect(() => {
@@ -33,6 +34,7 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
             setName(existingCategory.name);
             setSelectedColor(existingCategory.color);
             setGroup(existingCategory.group || '');
+            setCardNumber(existingCategory.cardNumber || '');
             // Format ISO string to YYYY-MM-DD for input type="date"
             if (existingCategory.nextBillDate) {
                 setNextBillDate(existingCategory.nextBillDate.split('T')[0]);
@@ -50,11 +52,12 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
                 name: name.trim(),
                 color: selectedColor,
                 group: group.trim() || undefined,
+                cardNumber: cardNumber.trim() || undefined,
                 nextBillDate: nextBillDate ? new Date(nextBillDate).toISOString() : undefined
             });
         } else {
             // Create functionality
-            addCategory(name.trim(), selectedColor, group.trim() || undefined, nextBillDate ? new Date(nextBillDate).toISOString() : undefined);
+            addCategory(name.trim(), selectedColor, group.trim() || undefined, cardNumber.trim() || undefined, nextBillDate ? new Date(nextBillDate).toISOString() : undefined);
         }
 
         onClose();
@@ -128,6 +131,18 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
                                 <option key={g} value={g} />
                             ))}
                         </datalist>
+                    </div>
+
+                    {/* Card Number */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Card Number / Last 4 Digits (Optional)</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. 1234 5678 9012 3456 or Just Last 4"
+                            value={cardNumber}
+                            onChange={(e) => setCardNumber(e.target.value)}
+                            className="w-full bg-muted/50 border border-input rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium font-mono"
+                        />
                     </div>
 
                     <button
