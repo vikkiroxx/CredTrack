@@ -14,7 +14,7 @@ type CategoryDetailProps = {
 };
 
 export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
-    const { categories, markAllAsPaid } = useData();
+    const { categories, spends, markAllAsPaid } = useData();
     const [isAddSpendOpen, setIsAddSpendOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false); // State for edit modal
     const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
