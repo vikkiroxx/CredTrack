@@ -1,10 +1,13 @@
-import { useData } from '../../context/DataContext';
+import { useState } from 'react';
+import { useData, Spend } from '../../context/DataContext';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { cn } from '../../lib/utils';
 import { CheckCircle2, Circle, Repeat, Trash2, Tag } from 'lucide-react';
+import { AddSpendForm } from './AddSpendForm';
 
 export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
     const { spends, categories, updateSpend, deleteSpend } = useData();
+    const [editingSpend, setEditingSpend] = useState<Spend | null>(null);
 
     const filteredSpends = filterCategoryId
         ? spends.filter(s => s.categoryId === filterCategoryId)
@@ -49,17 +52,21 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                         {group.items.map((spend) => (
                             <div
                                 key={spend.id}
+                                onClick={() => setEditingSpend(spend)}
                                 className={cn(
-                                    "flex items-center justify-between p-3 rounded-xl border bg-card transition-all",
+                                    "flex items-center justify-between p-3 rounded-xl border bg-card transition-all cursor-pointer hover:bg-muted/50 active:scale-98",
                                     spend.isPaid ? "border-primary/20 bg-primary/5" : "border-border"
                                 )}
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <button
-                                        onClick={() => updateSpend(spend.id, { isPaid: !spend.isPaid })}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateSpend(spend.id, { isPaid: !spend.isPaid });
+                                        }}
                                         className={cn(
-                                            "shrink-0 transition-colors",
-                                            spend.isPaid ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                                            "shrink-0 transition-colors p-1 rounded-full",
+                                            spend.isPaid ? "text-primary hover:bg-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                                         )}
                                     >
                                         {spend.isPaid ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
@@ -101,8 +108,11 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                                         ₹{spend.amount}
                                     </span>
                                     <button
-                                        onClick={() => { if (confirm("Delete spend?")) deleteSpend(spend.id); }}
-                                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm("Delete spend?")) deleteSpend(spend.id);
+                                        }}
+                                        className="text-muted-foreground hover:text-destructive transition-colors p-2 hover:bg-destructive/10 rounded-full"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -112,6 +122,13 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                     </div>
                 </div>
             ))}
+
+            {editingSpend && (
+                <AddSpendForm
+                    editSpend={editingSpend}
+                    onClose={() => setEditingSpend(null)}
+                />
+            )}
         </div>
     );
 }

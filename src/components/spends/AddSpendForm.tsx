@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useData } from '../../context/DataContext';
+import { useState, useEffect } from 'react';
+import { useData, Spend } from '../../context/DataContext';
 import { X, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -8,21 +8,49 @@ export type InitialSpendData = {
     amount?: number;
     description?: string;
     categoryId?: string;
-    dueDate?: string; // If paying a bill, might want to link it?
+    dueDate?: string;
 };
 
-export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onClose: () => void, defaultCategoryId?: string, initialData?: InitialSpendData }) {
-    const { categories, addSpend } = useData();
+export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpend }: { onClose: () => void, defaultCategoryId?: string, initialData?: InitialSpendData, editSpend?: Spend }) {
+    const { categories, addSpend, updateSpend } = useData();
 
-    const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
-    const [description, setDescription] = useState(initialData?.description || '');
-    const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultCategoryId || categories[0]?.id || '');
+    // Helper to format date for input
+    const formatDateForInput = (isoString?: string) => {
+        if (!isoString) return format(new Date(), 'yyyy-MM-dd');
+        return isoString.split('T')[0];
+    };
+
+    const [amount, setAmount] = useState('');
+    const [description, setDescription] = useState('');
+    const [categoryId, setCategoryId] = useState('');
     const [subcategory, setSubcategory] = useState('');
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-    const [dueDate, setDueDate] = useState(''); // New State for Due Date
-    const [emiEndDate, setEmiEndDate] = useState(''); // New State for End Date
+    const [dueDate, setDueDate] = useState('');
+    const [emiEndDate, setEmiEndDate] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
     const [isPaid, setIsPaid] = useState(false);
+
+    // Initialize state (for both New and Edit modes)
+    useEffect(() => {
+        if (editSpend) {
+            setAmount(editSpend.amount.toString());
+            setDescription(editSpend.description);
+            setCategoryId(editSpend.categoryId);
+            setSubcategory(editSpend.subcategory || '');
+            setDate(formatDateForInput(editSpend.date));
+            setIsRecurring(editSpend.isRecurring);
+            setDueDate(formatDateForInput(editSpend.dueDate));
+            setEmiEndDate(formatDateForInput(editSpend.emiEndDate));
+            setIsPaid(editSpend.isPaid);
+        } else {
+            // New Spend Initialization
+            setAmount(initialData?.amount?.toString() || '');
+            setDescription(initialData?.description || '');
+            setCategoryId(initialData?.categoryId || defaultCategoryId || categories[0]?.id || '');
+            setDate(format(new Date(), 'yyyy-MM-dd'));
+        }
+    }, [editSpend, initialData, defaultCategoryId, categories]);
+
 
     // Common subcategories/tags - could be dynamic later
     const SUGGESTED_SUBCATEGORIES = [
@@ -34,7 +62,6 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Submitting Spend:", { amount, description, categoryId });
 
         if (!amount || !categoryId || !description) {
             alert(`Please fill all fields.`);
@@ -45,8 +72,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
         setIsSubmitting(true);
 
         try {
-            console.log("Calling addSpend...");
-            await addSpend({
+            const spendData = {
                 amount: parseFloat(amount),
                 description,
                 categoryId,
@@ -56,12 +82,17 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                 dueDate: isRecurring && dueDate ? new Date(dueDate).toISOString() : undefined,
                 emiEndDate: isRecurring && emiEndDate ? new Date(emiEndDate).toISOString() : undefined,
                 isPaid,
-            });
-            console.log("Spend Added Successfully");
+            };
+
+            if (editSpend) {
+                await updateSpend(editSpend.id, spendData);
+            } else {
+                await addSpend(spendData);
+            }
             onClose();
         } catch (error) {
-            console.error("Error adding spend:", error);
-            alert("Error adding spend: " + (error as Error).message);
+            console.error("Error saving spend:", error);
+            alert("Error saving: " + (error as Error).message);
             setIsSubmitting(false); // Re-enable on error
         }
     };
@@ -70,16 +101,13 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
             <div className="bg-card text-card-foreground w-full max-w-sm rounded-xl border border-border shadow-xl p-6 animate-in fade-in zoom-in duration-200 lg:max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Add Spend</h2>
+                    <h2 className="text-xl font-bold">{editSpend ? 'Edit Spend' : 'Add Spend'}</h2>
                     <button onClick={onClose} disabled={isSubmitting} className="p-2 hover:bg-muted rounded-full transition-colors disabled:opacity-50">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* ... fields ... */}
-
-                    {/* (This part is omitted for brevity in search replacement, but effectively I am targeting the function start and return) */}
                     {/* Amount Input */}
                     <div>
                         <label className="text-sm font-medium text-muted-foreground">Amount</label>
@@ -91,7 +119,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 className="w-full bg-muted/50 border border-input rounded-lg pl-8 pr-4 py-3 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                autoFocus
+                                autoFocus={!editSpend} // Auto-focus only for new entry
                                 step="0.01"
                             />
                         </div>
@@ -112,7 +140,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                     {/* Category Selection */}
                     <div>
                         <label className="text-sm font-medium text-muted-foreground">Category (Card/Account)</label>
-                        {defaultCategoryId ? (
+                        {defaultCategoryId && !editSpend ? (
                             <div className="mt-1 p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-2">
                                 <div
                                     className="w-3 h-3 rounded-full"
@@ -124,7 +152,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                             </div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                <div className="grid grid-cols-2 gap-2 mt-1 max-h-40 overflow-y-auto">
                                     {categories.map(cat => (
                                         <button
                                             key={cat.id}
@@ -256,9 +284,9 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData }: { onCl
                         {isSubmitting ? (
                             <>
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Saving...
+                                {editSpend ? 'Updating...' : 'Saving...'}
                             </>
-                        ) : "Add Spend"}
+                        ) : (editSpend ? 'Update Spend' : 'Add Spend')}
                     </button>
                 </form>
             </div>
