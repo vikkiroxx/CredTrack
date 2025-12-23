@@ -17,6 +17,8 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
     const { categories, markAllAsPaid } = useData();
     const [isAddSpendOpen, setIsAddSpendOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false); // State for edit modal
+    const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+    const [customPayAmount, setCustomPayAmount] = useState('');
 
     const category = categories.find(c => c.id === categoryId);
 
@@ -87,12 +89,65 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
             <SubcategoryPieChart categoryId={categoryId} />
 
+            {/* Mark Paid Modal */}
+            {isMarkPaidOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div className="bg-card text-card-foreground w-full max-w-sm rounded-xl border border-border shadow-xl p-6 animate-in fade-in zoom-in duration-200">
+                        <h2 className="text-xl font-bold mb-2">Mark as Paid</h2>
+                        <p className="text-sm text-muted-foreground mb-4">Confirm payment for <strong>{category.name}</strong>.</p>
+
+                        <div className="space-y-4">
+                            <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center">
+                                <span className="text-sm font-medium">Items to clear</span>
+                                <span className="font-bold">{spends.filter(s => s.categoryId === categoryId && !s.isPaid).length}</span>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Total Bill Amount</label>
+                                <div className="relative mt-1">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                                    <input
+                                        type="number"
+                                        value={customPayAmount}
+                                        onChange={(e) => setCustomPayAmount(e.target.value)}
+                                        className="w-full bg-muted/50 border border-input rounded-lg pl-8 pr-4 py-2 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        step="0.01"
+                                        autoFocus
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Original Total: ₹{spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => setIsMarkPaidOpen(false)}
+                                    className="flex-1 py-2 rounded-lg bg-muted hover:bg-muted/80 font-medium transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        markAllAsPaid(categoryId, parseFloat(customPayAmount));
+                                        setIsMarkPaidOpen(false);
+                                    }}
+                                    className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors"
+                                >
+                                    Confirm Paid
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-end mb-4 px-1">
                 <button
                     onClick={() => {
-                        if (confirm('Are you sure you want to mark ALL pending spends in this category as PAID?')) {
-                            markAllAsPaid(categoryId);
-                        }
+                        const total = spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
+                        setCustomPayAmount(total.toString());
+                        setIsMarkPaidOpen(true);
                     }}
                     className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
                 >

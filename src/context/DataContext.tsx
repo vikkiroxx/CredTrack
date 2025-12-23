@@ -41,7 +41,7 @@ type DataContextType = {
     addSpend: (spend: Omit<Spend, 'id' | 'createdAt'>) => Promise<void>;
     updateSpend: (id: string, updates: Partial<Spend>) => Promise<void>;
     deleteSpend: (id: string) => Promise<void>;
-    markAllAsPaid: (categoryId: string) => Promise<void>;
+    markAllAsPaid: (categoryId: string, customPaidAmount?: number) => Promise<void>;
     importData: (data: { categories: Category[], spends: Spend[] }) => void;
     clearAllData: () => Promise<void>;
 };
