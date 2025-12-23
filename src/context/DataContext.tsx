@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { addMonths, addYears, parseISO } from 'date-fns';
 
 // Types
 export type Category = {
@@ -25,6 +26,7 @@ export type Spend = {
     subcategory?: string;
     isPaid: boolean;
     isRecurring: boolean;
+    recurringFrequency?: 'MONTHLY' | 'YEARLY';
     dueDate?: string;
     emiEndDate?: string;
     createdAt: string;
@@ -152,14 +154,52 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // Helper to generate next recurring spend
+    const createNextSpend = (current: Spend): Spend => {
+        const frequency = current.recurringFrequency || 'MONTHLY';
+        const nextDate = frequency === 'YEARLY'
+            ? addYears(parseISO(current.date), 1)
+            : addMonths(parseISO(current.date), 1);
+
+        // If there's a specific due date, shift that too
+        const nextDueDate = current.dueDate
+            ? (frequency === 'YEARLY' ? addYears(parseISO(current.dueDate), 1) : addMonths(parseISO(current.dueDate), 1)).toISOString()
+            : undefined;
+
+        // Check if we passed the end date
+        if (current.emiEndDate) {
+            const endDate = parseISO(current.emiEndDate);
+            if (nextDate > endDate) {
+                return current; // Should ideally return null but type safety, handled by caller
+            }
+        }
+
+        return {
+            ...current,
+            id: uuidv4(),
+            date: nextDate.toISOString(),
+            dueDate: nextDueDate,
+            isPaid: false,
+            createdAt: new Date().toISOString()
+        };
+    };
+
     const markAllAsPaid = async (categoryId: string) => {
+        const newSpends: Spend[] = [];
         const updatedSpends = spends.map(spend => {
             if (spend.categoryId === categoryId && !spend.isPaid) {
+                if (spend.isRecurring) {
+                    const nextSpend = createNextSpend(spend);
+                    // Only add if it's a new instance (simple check against same ID)
+                    if (nextSpend.id !== spend.id) {
+                        newSpends.push(nextSpend);
+                    }
+                }
                 return { ...spend, isPaid: true };
             }
             return spend;
         });
-        await saveSpends(updatedSpends);
+        await saveSpends([...updatedSpends, ...newSpends]);
     };
 
     const addCategory = async (name: string, color: string, group?: string, cardNumber?: string, nextBillDate?: string) => {
@@ -193,7 +233,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     const updateSpend = async (id: string, updates: Partial<Spend>) => {
-        await saveSpends(spends.map(s => s.id === id ? { ...s, ...updates } : s));
+        const currentSpend = spends.find(s => s.id === id);
+        let newGeneratedSpend: Spend | null = null;
+
+        // Auto-Renewal Logic
+        if (currentSpend && !currentSpend.isPaid && updates.isPaid === true && currentSpend.isRecurring) {
+            const nextSpend = createNextSpend(currentSpend);
+            if (nextSpend.id !== currentSpend.id) {
+                newGeneratedSpend = nextSpend;
+            }
+        }
+
+        const updatedList = spends.map(s => s.id === id ? { ...s, ...updates } : s);
+
+        if (newGeneratedSpend) {
+            updatedList.push(newGeneratedSpend);
+        }
+
+        await saveSpends(updatedList);
     };
 
     const deleteSpend = async (id: string) => {
