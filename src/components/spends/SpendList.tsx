@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useData, Spend } from '../../context/DataContext';
+import { useData, type Spend } from '../../context/DataContext';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { cn } from '../../lib/utils';
 import { CheckCircle2, Circle, Repeat, Trash2, Tag } from 'lucide-react';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useData, Spend } from '../../context/DataContext';
+import { useData, type Spend } from '../../context/DataContext';
 import { X, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
