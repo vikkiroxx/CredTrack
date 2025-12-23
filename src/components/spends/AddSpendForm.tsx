@@ -28,6 +28,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
     const [dueDate, setDueDate] = useState('');
     const [emiEndDate, setEmiEndDate] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
+    const [recurringFrequency, setRecurringFrequency] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
     const [isPaid, setIsPaid] = useState(false);
 
     // Initialize state (for both New and Edit modes)
@@ -39,6 +40,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
             setSubcategory(editSpend.subcategory || '');
             setDate(formatDateForInput(editSpend.date));
             setIsRecurring(editSpend.isRecurring);
+            setRecurringFrequency(editSpend.recurringFrequency || 'MONTHLY');
             setDueDate(formatDateForInput(editSpend.dueDate));
             setEmiEndDate(formatDateForInput(editSpend.emiEndDate));
             setIsPaid(editSpend.isPaid);
@@ -79,6 +81,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
                 subcategory: subcategory.trim() || undefined,
                 date: new Date(date).toISOString(),
                 isRecurring,
+                recurringFrequency: isRecurring ? recurringFrequency : undefined,
                 dueDate: isRecurring && dueDate ? new Date(dueDate).toISOString() : undefined,
                 emiEndDate: isRecurring && emiEndDate ? new Date(emiEndDate).toISOString() : undefined,
                 isPaid,
@@ -234,7 +237,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
                                     onChange={(e) => setIsRecurring(e.target.checked)}
                                     className="w-4 h-4 accent-primary rounded"
                                 />
-                                Recurring (EMI)
+                                Recurring
                             </label>
                             <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                                 <input
@@ -248,30 +251,41 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
                         </div>
                     </div>
 
-                    {/* Recurring Due Date (Conditional) */}
+                    {/* Recurring Options */}
                     {isRecurring && (
-                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200 grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Next Payment</label>
-                                <div className="relative mt-1">
+                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200 space-y-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Frequency</label>
+                                    <select
+                                        value={recurringFrequency}
+                                        onChange={(e) => setRecurringFrequency(e.target.value as 'MONTHLY' | 'YEARLY')}
+                                        className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    >
+                                        <option value="MONTHLY">Monthly</option>
+                                        <option value="YEARLY">Yearly</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Due (Opt)</label>
                                     <input
                                         type="date"
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
-                                        className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Ends On</label>
-                                <div className="relative mt-1">
-                                    <input
-                                        type="date"
-                                        value={emiEndDate}
-                                        onChange={(e) => setEmiEndDate(e.target.value)}
-                                        className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    />
-                                </div>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">End Date (Optional)</label>
+                                <input
+                                    type="date"
+                                    value={emiEndDate}
+                                    onChange={(e) => setEmiEndDate(e.target.value)}
+                                    className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    placeholder="Leave empty for forever"
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">Leave "Ends On" empty for ongoing subscriptions (Netflix, etc).</p>
                             </div>
                         </div>
                     )}
