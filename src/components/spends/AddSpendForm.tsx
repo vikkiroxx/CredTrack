@@ -55,7 +55,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
     // Common subcategories/tags - could be dynamic later
     const SUGGESTED_SUBCATEGORIES = [
         'Food', 'Fuel', 'Shopping', 'Groceries', 'Bills',
-        'Travel', 'Entertainment', 'Health', 'Education', 'Rent'
+        'Travel', 'Entertainment', 'Health', 'Education', 'Rent', 'Sutta'
     ];
 
     const [isSubmitting, setIsSubmitting] = useState(false);
