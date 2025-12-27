@@ -5,7 +5,7 @@ import { SpendList } from '../spends/SpendList';
 import { AddSpendForm } from '../spends/AddSpendForm';
 import { SubcategoryPieChart } from '../dashboard/SubcategoryPieChart';
 import { ArrowLeft, CheckCircle, Pencil, Plus } from 'lucide-react';
-import { format, differenceInDays, parseISO, isSameMonth } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { cn } from '../../lib/utils';
 
 type CategoryDetailProps = {
