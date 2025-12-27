@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AddCategoryForm } from './AddCategoryForm';
 import { useData } from '../../context/DataContext';
 import { SpendList } from '../spends/SpendList';
-import { AddSpendForm } from '../spends/AddSpendForm';
 import { SubcategoryPieChart } from '../dashboard/SubcategoryPieChart';
-import { ArrowLeft, Plus, CheckCircle } from 'lucide-react';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { ArrowLeft, CheckCircle, Pencil } from 'lucide-react';
+import { format, differenceInDays, parseISO, isSameMonth } from 'date-fns';
 import { cn } from '../../lib/utils';
 
 type CategoryDetailProps = {
@@ -14,19 +13,33 @@ type CategoryDetailProps = {
 };
 
 export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
-    const { categories, spends, markAllAsPaid } = useData();
-    const [isAddSpendOpen, setIsAddSpendOpen] = useState(false);
-    const [isEditOpen, setIsEditOpen] = useState(false); // State for edit modal
+    const { categories, spends: allSpends, markAllAsPaid } = useData();
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
     const [customPayAmount, setCustomPayAmount] = useState('');
 
     const category = categories.find(c => c.id === categoryId);
+
+    // Optimize performance by memoizing filtered spends
+    const spends = useMemo(() =>
+        allSpends.filter(s => s.categoryId === categoryId),
+        [allSpends, categoryId]);
 
     if (!category) return null;
 
     const daysLeft = category.nextBillDate
         ? differenceInDays(parseISO(category.nextBillDate), new Date())
         : null;
+
+    const today = new Date();
+
+    const totalSpentThisMonth = spends
+        .filter(s => isSameMonth(parseISO(s.date), today))
+        .reduce((sum, s) => sum + s.amount, 0);
+
+    const pendingBalance = spends
+        .filter(s => !s.isPaid)
+        .reduce((sum, s) => sum + s.amount, 0);
 
     return (
         <div className="flex flex-col h-full relative">
@@ -51,8 +64,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                                 )}
                             </div>
                             <div className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setIsEditOpen(true)}>
-                                {/* Small edit indicator */}
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                                <Pencil className="w-3 h-3" />
                             </div>
                         </div>
 
@@ -72,7 +84,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                             ) : (
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     Set Bill Date
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                                    <Pencil className="w-3 h-3" />
                                 </p>
                             )}
                         </button>
@@ -87,7 +99,25 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 />
             )}
 
-            <SubcategoryPieChart categoryId={categoryId} />
+            {/* Stats Card */}
+            <div className="bg-card text-card-foreground p-6 rounded-xl border border-border shadow-sm text-center mb-6">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Spent (Month)</p>
+                        <h2 className="text-2xl font-bold text-primary">₹{totalSpentThisMonth.toLocaleString()}</h2>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Pending Due</p>
+                        <h2 className="text-2xl font-bold text-destructive">₹{pendingBalance.toLocaleString()}</h2>
+                    </div>
+                </div>
+
+                <SubcategoryPieChart categoryId={categoryId} />
+            </div>
+
+            <div className="space-y-4 pb-24 h-full overflow-y-auto">
+                <SpendList categoryId={categoryId} />
+            </div>
 
             {/* Mark Paid Modal */}
             {isMarkPaidOpen && (
@@ -99,7 +129,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                         <div className="space-y-4">
                             <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center">
                                 <span className="text-sm font-medium">Items to clear</span>
-                                <span className="font-bold">{spends.filter(s => s.categoryId === categoryId && !s.isPaid).length}</span>
+                                <span className="font-bold">{spends.filter(s => !s.isPaid).length}</span>
                             </div>
 
                             <div>
@@ -116,7 +146,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Original Total: ₹{spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
+                                    Original Total: ₹{spends.filter(s => !s.isPaid).reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
                                 </p>
                             </div>
 
@@ -142,38 +172,23 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 </div>
             )}
 
-            <div className="flex justify-end mb-4 px-1">
-                {spends.some(s => s.categoryId === categoryId && !s.isPaid) && (
+            <div className="fixed bottom-6 right-6 flex flex-col gap-2">
+                {/* Floating Action Button for Mark Paid (Only if there are unpaid items) */}
+                {spends.some(s => !s.isPaid) && (
                     <button
                         onClick={() => {
-                            const total = spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
+                            const total = spends.filter(s => !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
                             setCustomPayAmount(total.toString());
                             setIsMarkPaidOpen(true);
                         }}
-                        className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
                     >
-                        <CheckCircle className="w-4 h-4" />
-                        Mark All as Paid
+                        <CheckCircle className="w-5 h-5" />
+                        Pay
                     </button>
                 )}
             </div>
 
-            <SpendList filterCategoryId={categoryId} />
-
-            {/* Floating Action Button for this Category */}
-            <button
-                onClick={() => setIsAddSpendOpen(true)}
-                className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all active:scale-90 z-20 flex items-center justify-center"
-            >
-                <Plus className="w-6 h-6" />
-            </button>
-
-            {isAddSpendOpen && (
-                <AddSpendForm
-                    onClose={() => setIsAddSpendOpen(false)}
-                    defaultCategoryId={categoryId}
-                />
-            )}
         </div>
     );
 }
