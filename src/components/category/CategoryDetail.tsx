@@ -125,6 +125,22 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 <SubcategoryPieChart categoryId={categoryId} />
             </div>
 
+            {/* Inline Pay Button - Restored to Original Position */}
+            <div className="flex justify-end mb-4 px-1">
+                {pendingBalance > 0.01 && (
+                    <button
+                        onClick={() => {
+                            setCustomPayAmount(pendingBalance.toFixed(2));
+                            setIsMarkPaidOpen(true);
+                        }}
+                        className="flex items-center gap-2 text-sm font-bold text-primary hover:bg-primary/10 px-4 py-2.5 rounded-lg transition-colors border border-primary/20"
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        Pay Balance
+                    </button>
+                )}
+            </div>
+
             <div className="space-y-4 pb-24 h-full overflow-y-auto">
                 <SpendList filterCategoryId={categoryId} />
             </div>
@@ -180,21 +196,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
             )}
 
             <div className="fixed bottom-6 right-6 flex flex-col gap-3 items-end">
-                {/* Floating Action Button for Mark Paid (Only if there are unpaid items) */}
-                {pendingBalance > 0.01 && (
-                    <button
-                        onClick={() => {
-                            setCustomPayAmount(pendingBalance.toFixed(2));
-                            setIsMarkPaidOpen(true);
-                        }}
-                        className="bg-green-600 text-white hover:bg-green-700 px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
-                    >
-                        <CheckCircle className="w-5 h-5" />
-                        Pay
-                    </button>
-                )}
-
-                {/* Add Spend Button */}
+                {/* Add Spend Button - ONLY Add Spend here */}
                 <button
                     onClick={() => setIsAddSpendOpen(true)}
                     className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all active:scale-90 flex items-center justify-center"
