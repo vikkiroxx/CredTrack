@@ -14,6 +14,7 @@ import { DataManagement } from './components/settings/DataManagement';
 import { SpendHistory } from './components/spends/SpendHistory';
 import { Plus, PieChart as PieChartIcon, ArrowLeft, Settings, Search } from 'lucide-react';
 import { MonthlyBarChart } from './components/dashboard/MonthlyBarChart';
+import pkg from '../package.json';
 
 type ViewState =
   | { type: 'HOME' }
@@ -90,7 +91,10 @@ function AppContent() {
         {/* Header */}
         <header className="p-4 border-b border-border bg-card sticky top-0 z-20 flex justify-between items-center shadow-sm">
           {view.type === 'HOME' ? (
-            <h1 className="text-xl font-bold text-primary tracking-tight">CredTrack</h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold text-primary tracking-tight leading-none">CredTrack</h1>
+              <span className="text-[0.6rem] text-muted-foreground font-mono">v{pkg.version}</span>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               <button onClick={goBack} className="p-1 hover:bg-muted rounded-full">

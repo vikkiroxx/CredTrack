@@ -184,8 +184,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         };
     };
 
-    const markAllAsPaid = async (categoryId: string) => {
+    const markAllAsPaid = async (categoryId: string, customPaidAmount?: number) => {
         const newSpends: Spend[] = [];
+        const unpaidSpends = spends.filter(s => s.categoryId === categoryId && !s.isPaid);
+
+        // Custom Amount Logic (Adjustment)
+        if (customPaidAmount !== undefined) {
+            const totalUnpaid = unpaidSpends.reduce((sum, s) => sum + s.amount, 0);
+            const diff = customPaidAmount - totalUnpaid;
+
+            // If there is a difference (e.g. Taxes, Fees, Rounding), add a specific adjustment spend
+            if (Math.abs(diff) > 0.01) {
+                newSpends.push({
+                    id: uuidv4(),
+                    amount: diff,
+                    description: diff > 0 ? 'Bill Adjustment / Fees' : 'Bill Adjustment / Discount',
+                    date: new Date().toISOString(),
+                    categoryId,
+                    isPaid: true, // Auto-paid
+                    isRecurring: false,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
+
         const updatedSpends = spends.map(spend => {
             if (spend.categoryId === categoryId && !spend.isPaid) {
                 if (spend.isRecurring) {
@@ -199,6 +221,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             }
             return spend;
         });
+
+        // Update Category Next Bill Date
+        const category = categories.find(c => c.id === categoryId);
+        if (category && category.nextBillDate) {
+            const nextBillDate = addMonths(parseISO(category.nextBillDate), 1).toISOString();
+            await updateCategory(categoryId, { nextBillDate });
+        }
+
         await saveSpends([...updatedSpends, ...newSpends]);
     };
 

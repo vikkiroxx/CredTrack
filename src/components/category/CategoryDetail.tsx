@@ -143,17 +143,19 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
             )}
 
             <div className="flex justify-end mb-4 px-1">
-                <button
-                    onClick={() => {
-                        const total = spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
-                        setCustomPayAmount(total.toString());
-                        setIsMarkPaidOpen(true);
-                    }}
-                    className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                    <CheckCircle className="w-4 h-4" />
-                    Mark All as Paid
-                </button>
+                {spends.some(s => s.categoryId === categoryId && !s.isPaid) && (
+                    <button
+                        onClick={() => {
+                            const total = spends.filter(s => s.categoryId === categoryId && !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
+                            setCustomPayAmount(total.toString());
+                            setIsMarkPaidOpen(true);
+                        }}
+                        className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        Mark All as Paid
+                    </button>
+                )}
             </div>
 
             <SpendList filterCategoryId={categoryId} />
