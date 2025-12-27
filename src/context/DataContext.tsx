@@ -188,45 +188,72 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const markAllAsPaid = async (categoryId: string, customPaidAmount?: number) => {
         const newSpends: Spend[] = [];
-        const unpaidSpends = spends.filter(s => s.categoryId === categoryId && !s.isPaid);
+        const spendsToUpdate = [...spends]; // Clone to find objects
+        const unpaidSpends = spendsToUpdate.filter(s => s.categoryId === categoryId && !s.isPaid);
 
-        // Custom Amount Logic (Adjustment)
-        if (customPaidAmount !== undefined) {
-            const totalUnpaid = unpaidSpends.reduce((sum, s) => sum + s.amount, 0);
-            const diff = customPaidAmount - totalUnpaid;
+        // Sort by Date ASC (Oldest first) to prioritize clearing backlogs
+        unpaidSpends.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-            // If there is a difference (e.g. Taxes, Fees, Rounding), add a specific adjustment spend
-            if (Math.abs(diff) > 0.01) {
-                newSpends.push({
-                    id: uuidv4(),
-                    amount: diff,
-                    description: diff > 0 ? 'Bill Adjustment / Fees' : 'Bill Adjustment / Discount',
-                    date: new Date().toISOString(),
-                    categoryId,
-                    isPaid: true, // Auto-paid
-                    isRecurring: false,
-                    createdAt: new Date().toISOString()
-                });
-            }
-        }
+        const totalUnpaid = unpaidSpends.reduce((sum, s) => sum + s.amount, 0);
 
-        const updatedSpends = spends.map(spend => {
-            if (spend.categoryId === categoryId && !spend.isPaid) {
+        // Determine effective payment amount
+        let remainingAmount = customPaidAmount !== undefined ? customPaidAmount : totalUnpaid;
+
+        // IDs of spends that get paid in this transaction
+        const paidSpendIds = new Set<string>();
+
+        // 1. Waterfall Payment Logic
+        for (const spend of unpaidSpends) {
+            if (remainingAmount <= 0.01) break; // Stop if money runs out
+
+            // If we can afford this spend (or if it's the standard "Pay All" case)
+            if (customPaidAmount === undefined || spend.amount <= remainingAmount + 0.01) {
+                paidSpendIds.add(spend.id);
+                remainingAmount -= spend.amount;
+
+                // Handle Recurring Logic
                 if (spend.isRecurring) {
                     const nextSpend = createNextSpend(spend);
-                    // Only add if it's a new instance (simple check against same ID)
                     if (nextSpend.id !== spend.id) {
                         newSpends.push(nextSpend);
                     }
                 }
+            } else {
+                // Spend too big for remaining amount. Skip.
+            }
+        }
+
+        // 2. Handle Adjustment / Partial Credit
+        if (customPaidAmount !== undefined && Math.abs(remainingAmount) > 0.01) {
+            const hasUnpaidLeft = unpaidSpends.some(s => !paidSpendIds.has(s.id));
+
+            newSpends.push({
+                id: uuidv4(),
+                amount: -remainingAmount, // Negative amount
+                description: hasUnpaidLeft ? 'Partial Payment / Credit' : 'Bill Adjustment / Fees',
+                date: new Date().toISOString(),
+                categoryId,
+                isPaid: !hasUnpaidLeft, // Paid if cleared everything, Unpaid (Credit) if debt remains
+                paidDate: !hasUnpaidLeft ? undefined : new Date().toISOString(),
+                isRecurring: false,
+                createdAt: new Date().toISOString()
+            });
+        }
+
+        // 3. Apply Updates
+        const updatedSpends = spendsToUpdate.map(spend => {
+            if (paidSpendIds.has(spend.id)) {
                 return { ...spend, isPaid: true, paidDate: new Date().toISOString() };
             }
             return spend;
         });
 
-        // Update Category Next Bill Date
+        // 4. Update Category Next Bill Date
+        // Only if a recurring spend was INCLUDED in the paid set
         const category = categories.find(c => c.id === categoryId);
-        if (category && category.nextBillDate) {
+        const recurringWasPaid = unpaidSpends.some(s => s.isRecurring && paidSpendIds.has(s.id));
+
+        if (category && category.nextBillDate && recurringWasPaid) {
             const nextBillDate = addMonths(parseISO(category.nextBillDate), 1).toISOString();
             await updateCategory(categoryId, { nextBillDate });
         }
