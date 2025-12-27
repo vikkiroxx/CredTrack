@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { AddCategoryForm } from './AddCategoryForm';
 import { useData } from '../../context/DataContext';
 import { SpendList } from '../spends/SpendList';
+import { AddSpendForm } from '../spends/AddSpendForm';
 import { SubcategoryPieChart } from '../dashboard/SubcategoryPieChart';
-import { ArrowLeft, CheckCircle, Pencil } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Pencil, Plus } from 'lucide-react';
 import { format, differenceInDays, parseISO, isSameMonth } from 'date-fns';
 import { cn } from '../../lib/utils';
 
@@ -16,6 +17,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
     const { categories, spends: allSpends, markAllAsPaid } = useData();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+    const [isAddSpendOpen, setIsAddSpendOpen] = useState(false);
     const [customPayAmount, setCustomPayAmount] = useState('');
 
     const category = categories.find(c => c.id === categoryId);
@@ -100,6 +102,13 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 />
             )}
 
+            {isAddSpendOpen && (
+                <AddSpendForm
+                    onClose={() => setIsAddSpendOpen(false)}
+                    defaultCategoryId={categoryId}
+                />
+            )}
+
             {/* Stats Card */}
             <div className="bg-card text-card-foreground p-6 rounded-xl border border-border shadow-sm text-center mb-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -170,7 +179,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 </div>
             )}
 
-            <div className="fixed bottom-6 right-6 flex flex-col gap-2">
+            <div className="fixed bottom-6 right-6 flex flex-col gap-3 items-end">
                 {/* Floating Action Button for Mark Paid (Only if there are unpaid items) */}
                 {pendingBalance > 0.01 && (
                     <button
@@ -178,12 +187,20 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                             setCustomPayAmount(pendingBalance.toFixed(2));
                             setIsMarkPaidOpen(true);
                         }}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
+                        className="bg-green-600 text-white hover:bg-green-700 px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
                     >
                         <CheckCircle className="w-5 h-5" />
                         Pay
                     </button>
                 )}
+
+                {/* Add Spend Button */}
+                <button
+                    onClick={() => setIsAddSpendOpen(true)}
+                    className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all active:scale-90 flex items-center justify-center"
+                >
+                    <Plus className="w-6 h-6" />
+                </button>
             </div>
 
         </div>
