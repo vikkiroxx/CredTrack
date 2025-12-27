@@ -67,10 +67,7 @@ function AppContent() {
     window.history.back();
   };
 
-  const openAddSpend = (data?: InitialSpendData) => {
-    setSpendInitialData(data);
-    setIsSpendModalOpen(true);
-  };
+
 
   const closeAddSpend = () => {
     setIsSpendModalOpen(false);
@@ -140,7 +137,7 @@ function AppContent() {
         <main className="flex-1 p-4 overflow-y-auto max-w-md mx-auto w-full">
           {view.type === 'HOME' ? (
             <>
-              <MonthlySummary onPayClick={openAddSpend} />
+              <MonthlySummary onNavigate={navigateToCategory} />
 
               {/* Categories */}
               <div className="mb-6">

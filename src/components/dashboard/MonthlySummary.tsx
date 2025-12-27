@@ -3,9 +3,9 @@ import { useData } from '../../context/DataContext';
 import { format, isSameMonth, parseISO, differenceInDays, addDays, isAfter } from 'date-fns';
 import { TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import type { InitialSpendData } from '../spends/AddSpendForm';
 
-export function MonthlySummary({ onPayClick }: { onPayClick: (data?: InitialSpendData) => void }) {
+
+export function MonthlySummary({ onNavigate }: { onNavigate: (categoryId: string) => void }) {
     const { spends, categories } = useData();
 
     const today = new Date();
@@ -147,11 +147,7 @@ export function MonthlySummary({ onPayClick }: { onPayClick: (data?: InitialSpen
                                             <p className="text-sm font-bold">₹{item.amount.toLocaleString()}</p>
                                         )}
                                         <button
-                                            onClick={() => onPayClick({
-                                                amount: item.amount,
-                                                description: item.name,
-                                                categoryId: item.categoryId
-                                            })}
+                                            onClick={() => onNavigate(item.categoryId)}
                                             className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full hover:bg-primary/90 transition-colors shadow-sm active:scale-95"
                                         >
                                             Pay
