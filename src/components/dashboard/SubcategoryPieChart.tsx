@@ -15,28 +15,45 @@ export function SubcategoryPieChart({ categoryId }: { categoryId: string }) {
 
     const { total, data } = useMemo(() => {
         const subcategoryTotals: Record<string, number> = {};
-        let total = 0;
 
-        // Only visualize actual spending (positive amounts), ignore payments/settlements
-        const spendingSpends = spends.filter(s => s.categoryId === categoryId && s.amount > 0);
+        // 1. Calculate Net Balance (Visual Truth of the account)
+        const netBalance = spends
+            .filter(s => s.categoryId === categoryId)
+            .reduce((sum, s) => sum + s.amount, 0);
 
-        spendingSpends.forEach(spend => {
+        // 2. Identify Active (Unpaid) Spends for breakdown
+        // These are the "Fresh Start" items for the new month/period
+        const activeSpends = spends.filter(s => s.categoryId === categoryId && !s.isPaid);
+
+        let activeTotal = 0;
+        activeSpends.forEach(spend => {
             const sub = spend.subcategory || 'General';
             subcategoryTotals[sub] = (subcategoryTotals[sub] || 0) + spend.amount;
-            total += spend.amount;
+            activeTotal += spend.amount;
         });
 
-        if (total === 0) return { total: 0, data: [] };
+        // 3. Determine if there is "Carried Over" balance
+        // If Net > Active, it means there is residual debt not covered by specific unpaid items
+        // (e.g., from a partial payment of the previous bill)
+        const remainingHistory = netBalance - activeTotal;
+
+        if (remainingHistory > 0.01) {
+            // Add a single slice for the "Settled/Remaining" balance
+            subcategoryTotals['Bill Settled'] = remainingHistory;
+        }
+
+        // If total is zero or negative (overpaid), show nothing
+        if (netBalance <= 0.01) return { total: 0, data: [] };
 
         const chartData = Object.entries(subcategoryTotals)
             .map(([name, value], index) => ({
                 name,
                 value,
-                color: COLORS[index % COLORS.length]
+                color: name === 'Bill Settled' ? '#ef4444' : COLORS[index % COLORS.length] // Red for debt, vibrant for others
             }))
             .sort((a, b) => b.value - a.value);
 
-        return { total, data: chartData };
+        return { total: netBalance, data: chartData };
 
     }, [spends, categoryId]);
 
