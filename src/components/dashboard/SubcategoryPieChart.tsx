@@ -17,9 +17,10 @@ export function SubcategoryPieChart({ categoryId }: { categoryId: string }) {
         const subcategoryTotals: Record<string, number> = {};
         let total = 0;
 
-        const filteredSpends = spends.filter(s => s.categoryId === categoryId);
+        // Only visualize actual spending (positive amounts), ignore payments/settlements
+        const spendingSpends = spends.filter(s => s.categoryId === categoryId && s.amount > 0);
 
-        filteredSpends.forEach(spend => {
+        spendingSpends.forEach(spend => {
             const sub = spend.subcategory || 'General';
             subcategoryTotals[sub] = (subcategoryTotals[sub] || 0) + spend.amount;
             total += spend.amount;
@@ -43,7 +44,7 @@ export function SubcategoryPieChart({ categoryId }: { categoryId: string }) {
 
     return (
         <div className="w-full bg-card rounded-xl border border-border p-4 shadow-sm mb-6">
-            <h3 className="text-sm font-semibold mb-1 text-center text-muted-foreground">Spending by Subcategory</h3>
+            <h3 className="text-sm font-semibold mb-1 text-center text-muted-foreground">Spending Breakdown</h3>
             <p className="text-2xl font-bold text-center text-primary mb-4">
                 ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
