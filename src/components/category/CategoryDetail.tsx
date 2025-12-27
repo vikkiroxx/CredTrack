@@ -37,8 +37,9 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
         .filter(s => isSameMonth(parseISO(s.date), today))
         .reduce((sum, s) => sum + s.amount, 0);
 
+    // With "Bill Settled" logic, the Net Balance is simply the sum of all transactions
+    // (Positive Spends - Negative Payments)
     const pendingBalance = spends
-        .filter(s => !s.isPaid)
         .reduce((sum, s) => sum + s.amount, 0);
 
     return (
@@ -116,7 +117,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
             </div>
 
             <div className="space-y-4 pb-24 h-full overflow-y-auto">
-                <SpendList categoryId={categoryId} />
+                <SpendList filterCategoryId={categoryId} />
             </div>
 
             {/* Mark Paid Modal */}
@@ -128,12 +129,12 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
                         <div className="space-y-4">
                             <div className="p-3 bg-muted/50 rounded-lg flex justify-between items-center">
-                                <span className="text-sm font-medium">Items to clear</span>
-                                <span className="font-bold">{spends.filter(s => !s.isPaid).length}</span>
+                                <span className="text-sm font-medium">Net Pending Balance</span>
+                                <span className="font-bold">₹{pendingBalance.toFixed(2)}</span>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Total Bill Amount</label>
+                                <label className="text-sm font-medium text-muted-foreground">Payment Amount</label>
                                 <div className="relative mt-1">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
                                     <input
@@ -145,9 +146,6 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                                         autoFocus
                                     />
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Original Total: ₹{spends.filter(s => !s.isPaid).reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
-                                </p>
                             </div>
 
                             <div className="flex gap-3 pt-2">
@@ -174,11 +172,10 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
             <div className="fixed bottom-6 right-6 flex flex-col gap-2">
                 {/* Floating Action Button for Mark Paid (Only if there are unpaid items) */}
-                {spends.some(s => !s.isPaid) && (
+                {pendingBalance > 0.01 && (
                     <button
                         onClick={() => {
-                            const total = spends.filter(s => !s.isPaid).reduce((sum, s) => sum + s.amount, 0);
-                            setCustomPayAmount(total.toString());
+                            setCustomPayAmount(pendingBalance.toFixed(2));
                             setIsMarkPaidOpen(true);
                         }}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
