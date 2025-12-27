@@ -99,6 +99,14 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                                                     <Repeat className="w-3 h-3 text-blue-500" />
                                                 </>
                                             )}
+                                            {spend.isPaid && spend.paidDate && (
+                                                <>
+                                                    <span className="opacity-50">•</span>
+                                                    <span className="text-green-600 font-medium">
+                                                        Paid {format(parseISO(spend.paidDate), 'MMM d')}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

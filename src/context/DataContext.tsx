@@ -29,6 +29,7 @@ export type Spend = {
     recurringFrequency?: 'MONTHLY' | 'YEARLY';
     dueDate?: string;
     emiEndDate?: string;
+    paidDate?: string;
     createdAt: string;
 };
 
@@ -180,6 +181,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             date: nextDate.toISOString(),
             dueDate: nextDueDate,
             isPaid: false,
+            paidDate: undefined,
             createdAt: new Date().toISOString()
         };
     };
@@ -217,7 +219,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         newSpends.push(nextSpend);
                     }
                 }
-                return { ...spend, isPaid: true };
+                return { ...spend, isPaid: true, paidDate: new Date().toISOString() };
             }
             return spend;
         });
@@ -257,6 +259,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const newSpend: Spend = {
             ...spendData,
             id: uuidv4(),
+            paidDate: spendData.isPaid ? new Date().toISOString() : undefined,
             createdAt: new Date().toISOString(),
         };
         await saveSpends([...spends, newSpend]);
@@ -265,16 +268,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const updateSpend = async (id: string, updates: Partial<Spend>) => {
         const currentSpend = spends.find(s => s.id === id);
         let newGeneratedSpend: Spend | null = null;
+        let finalUpdates = { ...updates };
 
-        // Auto-Renewal Logic
-        if (currentSpend && !currentSpend.isPaid && updates.isPaid === true && currentSpend.isRecurring) {
-            const nextSpend = createNextSpend(currentSpend);
-            if (nextSpend.id !== currentSpend.id) {
-                newGeneratedSpend = nextSpend;
+        // Handle Paid Date logic
+        if (updates.isPaid === true) {
+            finalUpdates.paidDate = new Date().toISOString();
+        } else if (updates.isPaid === false) {
+            finalUpdates.paidDate = undefined; // Clear it if marked unpaid
+        }
+
+        // Auto-Renewal & Category Date Sync Logic
+        if (currentSpend && !currentSpend.isPaid && updates.isPaid === true) {
+            // 1. Recurring Auto-Renewal
+            if (currentSpend.isRecurring) {
+                const nextSpend = createNextSpend(currentSpend);
+                if (nextSpend.id !== currentSpend.id) {
+                    newGeneratedSpend = nextSpend;
+                }
+
+                // 2. Sync Category Next Bill Date (Fix for persistence issue)
+                const category = categories.find(c => c.id === currentSpend.categoryId);
+                if (category && category.nextBillDate) {
+                    const nextBillDate = addMonths(parseISO(category.nextBillDate), 1).toISOString();
+                    // We can call updateCategory directly here but we need to await it.
+                    // Instead of blocking, we'll fire and forget or await it if we want strict consistency.
+                    // Given the context, we should update local state via helper or just call the function.
+                    // Since updateCategory updates all categories, it's safe.
+                    await updateCategory(category.id, { nextBillDate });
+                }
             }
         }
 
-        const updatedList = spends.map(s => s.id === id ? { ...s, ...updates } : s);
+        const updatedList = spends.map(s => s.id === id ? { ...s, ...finalUpdates } : s);
 
         if (newGeneratedSpend) {
             updatedList.push(newGeneratedSpend);
