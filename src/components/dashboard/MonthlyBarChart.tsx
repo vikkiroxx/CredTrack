@@ -11,6 +11,10 @@ export function MonthlyBarChart() {
 
         spends.forEach(spend => {
             const date = parseISO(spend.date);
+
+            // Filter out future months
+            if (date > new Date()) return;
+
             const monthKey = format(startOfMonth(date), 'yyyy-MM'); // Group key
 
             if (!monthlyData[monthKey]) {

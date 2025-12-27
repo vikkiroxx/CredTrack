@@ -110,7 +110,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                     <h2 className="text-3xl font-bold text-primary">₹{pendingBalance.toLocaleString()}</h2>
                 </div>
 
-                <SubcategoryPieChart categoryId={categoryId} />
+                <SubcategoryPieChart categoryId={categoryId} showTotal={false} />
             </div>
 
             {/* Inline Pay Button */}
