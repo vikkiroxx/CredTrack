@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
 
-export function SubcategoryPieChart({ categoryId }: { categoryId: string }) {
+export function SubcategoryPieChart({ categoryId, showTotal = true }: { categoryId: string, showTotal?: boolean }) {
     const { spends } = useData();
     const { theme } = useTheme();
 
@@ -61,10 +61,14 @@ export function SubcategoryPieChart({ categoryId }: { categoryId: string }) {
 
     return (
         <div className="w-full bg-card rounded-xl border border-border p-4 shadow-sm mb-6">
-            <h3 className="text-sm font-semibold mb-1 text-center text-muted-foreground">Spending Breakdown</h3>
-            <p className="text-2xl font-bold text-center text-primary mb-4">
-                ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
+            {showTotal && (
+                <>
+                    <h3 className="text-sm font-semibold mb-1 text-center text-muted-foreground">Spending Breakdown</h3>
+                    <p className="text-2xl font-bold text-center text-primary mb-4">
+                        ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                </>
+            )}
 
             <div className="h-48 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
