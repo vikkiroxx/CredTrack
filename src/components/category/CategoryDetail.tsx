@@ -33,12 +33,6 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
         ? differenceInDays(parseISO(category.nextBillDate), new Date())
         : null;
 
-    const today = new Date();
-
-    const totalSpentThisMonth = spends
-        .filter(s => isSameMonth(parseISO(s.date), today))
-        .reduce((sum, s) => sum + s.amount, 0);
-
     // With "Bill Settled" logic, the Net Balance is simply the sum of all transactions
     // (Positive Spends - Negative Payments)
     const pendingBalance = spends
@@ -111,21 +105,15 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
 
             {/* Stats Card */}
             <div className="bg-card text-card-foreground p-6 rounded-xl border border-border shadow-sm text-center mb-6">
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <p className="text-xs text-muted-foreground mb-1">Spent (Month)</p>
-                        <h2 className="text-2xl font-bold text-primary">₹{totalSpentThisMonth.toLocaleString()}</h2>
-                    </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground mb-1">Pending Due</p>
-                        <h2 className="text-2xl font-bold text-destructive">₹{pendingBalance.toLocaleString()}</h2>
-                    </div>
+                <div className="mb-6">
+                    <p className="text-xs text-muted-foreground mb-1">Net Balance</p>
+                    <h2 className="text-3xl font-bold text-primary">₹{pendingBalance.toLocaleString()}</h2>
                 </div>
 
                 <SubcategoryPieChart categoryId={categoryId} />
             </div>
 
-            {/* Inline Pay Button - Restored to Original Position */}
+            {/* Inline Pay Button */}
             <div className="flex justify-end mb-4 px-1">
                 {pendingBalance > 0.01 && (
                     <button
@@ -195,7 +183,7 @@ export function CategoryDetail({ categoryId, onBack }: CategoryDetailProps) {
                 </div>
             )}
 
-            <div className="fixed bottom-6 right-6 flex flex-col gap-3 items-end">
+            <div className="fixed bottom-6 right-6 flex flex-col gap-3 items-end z-50">
                 {/* Add Spend Button - ONLY Add Spend here */}
                 <button
                     onClick={() => setIsAddSpendOpen(true)}
