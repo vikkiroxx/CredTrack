@@ -1,10 +1,13 @@
 import { useRef } from 'react';
 import { useData } from '../../context/DataContext';
-import { Download, Upload, X, AlertTriangle } from 'lucide-react';
+import { Download, Upload, X, AlertTriangle, CreditCard, Sparkles } from 'lucide-react';
 
 export function DataManagement({ onClose }: { onClose: () => void }) {
-    const { categories, spends, importData, clearAllData } = useData();
+    const { categories, spends, importData, clearAllData, autoMergeScapiaCards } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const hasDualScapia = categories.some(c => c.name.toLowerCase().includes('scapia') && c.name.toLowerCase().includes('rupay')) &&
+        categories.some(c => c.name.toLowerCase().includes('scapia') && (c.name.toLowerCase().includes('visa') || !c.name.toLowerCase().includes('rupay')));
 
     const handleExport = () => {
         const data = {
@@ -72,6 +75,28 @@ export function DataManagement({ onClose }: { onClose: () => void }) {
                             Your data is stored <b>locally on this device</b>. Creates a backup file to save your data or transfer it to another device.
                         </p>
                     </div>
+
+                    {hasDualScapia && (
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2.5">
+                            <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
+                                <CreditCard className="w-4 h-4" />
+                                Merge Scapia Cards (Single Bill)
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                We detected separate "Scapia Rupay" and "Scapia Visa" cards. Federal Bank Scapia generates a single bill statement for both cards. Merge them into 1 unified "Scapia" card.
+                            </p>
+                            <button
+                                onClick={async () => {
+                                    await autoMergeScapiaCards();
+                                    alert('Scapia cards merged successfully into 1 unified card!');
+                                }}
+                                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Merge Scapia Cards Now
+                            </button>
+                        </div>
+                    )}
 
                     <div className="grid gap-4">
                         <button

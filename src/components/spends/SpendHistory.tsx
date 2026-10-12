@@ -30,7 +30,17 @@ export function SpendHistory() {
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
     }, [spends, categories, searchTerm, monthFilter]);
 
-    const totalFiltered = filteredSpends.reduce((sum, s) => sum + s.amount, 0);
+    const totalSpentFiltered = useMemo(() => {
+        return filteredSpends
+            .filter(s => s.description !== 'Bill Settled' && s.amount > 0)
+            .reduce((sum, s) => sum + s.amount, 0);
+    }, [filteredSpends]);
+
+    const totalPaymentsFiltered = useMemo(() => {
+        return filteredSpends
+            .filter(s => s.description === 'Bill Settled' || s.amount < 0)
+            .reduce((sum, s) => sum + Math.abs(s.amount), 0);
+    }, [filteredSpends]);
 
     return (
         <div className="space-y-4">
@@ -58,8 +68,11 @@ export function SpendHistory() {
                         <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     </div>
                     <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Total View</p>
-                        <p className="text-lg font-bold">₹{totalFiltered.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total Spent</p>
+                        <p className="text-lg font-bold text-primary">₹{totalSpentFiltered.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+                        {totalPaymentsFiltered > 0 && (
+                            <p className="text-[10px] text-emerald-500 font-medium">Settled: ₹{totalPaymentsFiltered.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -73,6 +86,8 @@ export function SpendHistory() {
                 ) : (
                     filteredSpends.map(spend => {
                         const category = categories.find(c => c.id === spend.categoryId);
+                        const isPayment = spend.description === 'Bill Settled' || spend.amount < 0;
+
                         return (
                             <div key={spend.id} className="flex justify-between items-center p-3 bg-card border border-border rounded-xl shadow-sm">
                                 <div className="flex items-center gap-3">
@@ -84,7 +99,7 @@ export function SpendHistory() {
                                         {category?.name[0]}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-medium truncate">{spend.description}</p>
+                                        <p className={`font-medium truncate ${isPayment ? 'text-emerald-500 font-semibold' : ''}`}>{spend.description}</p>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <span>{format(parseISO(spend.date), 'dd MMM, yyyy')}</span>
                                             {spend.subcategory && (
@@ -94,9 +109,14 @@ export function SpendHistory() {
                                     </div>
                                 </div>
                                 <div className="text-right whitespace-nowrap ml-2">
-                                    <p className="font-bold">₹{spend.amount.toLocaleString()}</p>
+                                    <p className={`font-bold ${isPayment ? 'text-emerald-500' : 'text-foreground'}`}>
+                                        {isPayment ? `-₹${Math.abs(spend.amount).toLocaleString('en-IN')}` : `₹${spend.amount.toLocaleString('en-IN')}`}
+                                    </p>
                                     {spend.isRecurring && (
                                         <p className="text-[10px] text-blue-500 font-medium">EMI</p>
+                                    )}
+                                    {isPayment && (
+                                        <p className="text-[10px] text-emerald-500 font-medium">Payment</p>
                                     )}
                                 </div>
                             </div>

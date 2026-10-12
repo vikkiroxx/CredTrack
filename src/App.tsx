@@ -44,7 +44,7 @@ function AppContent() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
-    console.log("CredTrack Version: 0.1.3 Loaded");
+    console.log(`CredTrack Version: ${pkg.version} Loaded`);
     const handleHashChange = () => {
       setView(getViewFromHash());
     };

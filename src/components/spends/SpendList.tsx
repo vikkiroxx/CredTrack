@@ -73,7 +73,12 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                                     </button>
 
                                     <div className="min-w-0">
-                                        <p className={cn("font-medium truncate", spend.isPaid && "line-through text-muted-foreground")}>
+                                        <p className={cn(
+                                            "font-medium truncate",
+                                            spend.description === 'Bill Settled' || spend.amount < 0
+                                                ? "text-emerald-500 font-semibold"
+                                                : spend.isPaid && "line-through text-muted-foreground"
+                                        )}>
                                             {spend.description}
                                         </p>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -103,7 +108,7 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                                                 <>
                                                     <span className="opacity-50">•</span>
                                                     <span className="text-green-600 font-medium">
-                                                        Paid {format(parseISO(spend.paidDate), 'MMM d')}
+                                                        {spend.description === 'Bill Settled' || spend.amount < 0 ? 'Settled' : 'Paid'} {format(parseISO(spend.paidDate), 'MMM d')}
                                                     </span>
                                                 </>
                                             )}
@@ -112,8 +117,15 @@ export function SpendList({ filterCategoryId }: { filterCategoryId?: string }) {
                                 </div>
 
                                 <div className="flex items-center gap-3 shrink-0 pl-2">
-                                    <span className={cn("font-bold whitespace-nowrap", spend.isPaid ? "text-muted-foreground" : "text-foreground")}>
-                                        ₹{spend.amount}
+                                    <span className={cn(
+                                        "font-bold whitespace-nowrap",
+                                        spend.description === 'Bill Settled' || spend.amount < 0
+                                            ? "text-emerald-500"
+                                            : spend.isPaid ? "text-muted-foreground" : "text-foreground"
+                                    )}>
+                                        {spend.description === 'Bill Settled' || spend.amount < 0
+                                            ? `-₹${Math.abs(spend.amount).toLocaleString('en-IN')}`
+                                            : `₹${spend.amount.toLocaleString('en-IN')}`}
                                     </span>
                                     <button
                                         onClick={(e) => {
