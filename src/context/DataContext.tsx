@@ -43,6 +43,8 @@ type DataContextType = {
     updateSpend: (id: string, updates: Partial<Spend>) => Promise<void>;
     deleteSpend: (id: string) => Promise<void>;
     markAllAsPaid: (categoryId: string, customPaidAmount?: number) => Promise<void>;
+    mergeCategories: (sourceCategoryId: string, targetCategoryId: string) => Promise<void>;
+    autoMergeScapiaCards: () => Promise<void>;
     importData: (data: { categories: Category[], spends: Spend[] }) => void;
     clearAllData: () => Promise<void>;
 };
@@ -115,6 +117,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         localStorage.setItem('credtrack_spends', JSON.stringify(spends));
     }, [spends]);
+
+    // Auto-migration: Automatically merge dual Scapia cards when detected
+    useEffect(() => {
+        if (categories.length > 0) {
+            const scapiaCards = categories.filter(c => c.name.toLowerCase().includes('scapia'));
+            if (scapiaCards.length > 1) {
+                console.log('Multiple Scapia cards detected, auto-merging into single card...');
+                autoMergeScapiaCards();
+            }
+        }
+    }, [categories]);
 
     // --- Actions ---
 
@@ -259,6 +272,59 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         await saveCategories(categories.filter(c => c.id !== id));
     };
 
+    const mergeCategories = async (sourceId: string, targetId: string) => {
+        const sourceCat = categories.find(c => c.id === sourceId);
+        const targetCat = categories.find(c => c.id === targetId);
+        if (!sourceCat || !targetCat) return;
+
+        let combinedCardNumber = targetCat.cardNumber;
+        if (sourceCat.cardNumber && targetCat.cardNumber && !targetCat.cardNumber.includes(sourceCat.cardNumber)) {
+            combinedCardNumber = `${targetCat.cardNumber} | ${sourceCat.cardNumber}`;
+        } else if (sourceCat.cardNumber && !targetCat.cardNumber) {
+            combinedCardNumber = sourceCat.cardNumber;
+        }
+
+        const updatedCategories = categories
+            .filter(c => c.id !== sourceId)
+            .map(c => c.id === targetId ? { ...c, cardNumber: combinedCardNumber } : c);
+
+        const updatedSpends = spends.map(s => s.categoryId === sourceId ? { ...s, categoryId: targetId } : s);
+
+        await saveCategories(updatedCategories);
+        await saveSpends(updatedSpends);
+    };
+
+    const autoMergeScapiaCards = async () => {
+        const scapiaCards = categories.filter(c => c.name.toLowerCase().includes('scapia'));
+        if (scapiaCards.length <= 1) return;
+
+        // Target card is either Scapia Visa or the first Scapia card
+        const targetCard = scapiaCards.find(c => c.name.toLowerCase().includes('visa')) || scapiaCards[0];
+        const sourceCards = scapiaCards.filter(c => c.id !== targetCard.id);
+        const sourceIds = sourceCards.map(c => c.id);
+
+        const updatedCategories = categories
+            .filter(c => !sourceIds.includes(c.id))
+            .map(c => {
+                if (c.id === targetCard.id) {
+                    return {
+                        ...c,
+                        name: 'Scapia',
+                        group: 'Scapia',
+                        color: '#22c55e',
+                        cardNumber: 'Visa ••••7328 | RuPay ••••8745',
+                        nextBillDate: c.nextBillDate || '2026-10-25T00:00:00.000Z'
+                    };
+                }
+                return c;
+            });
+
+        const updatedSpends = spends.map(s => sourceIds.includes(s.categoryId) ? { ...s, categoryId: targetCard.id } : s);
+
+        await saveCategories(updatedCategories);
+        await saveSpends(updatedSpends);
+    };
+
     const addSpend = async (spendData: Omit<Spend, 'id' | 'createdAt'>) => {
         const newSpend: Spend = {
             ...spendData,
@@ -348,7 +414,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, markAllAsPaid, importData, clearAllData }}>
+        <DataContext.Provider value={{ categories, spends, addCategory, updateCategory, deleteCategory, addSpend, updateSpend, deleteSpend, markAllAsPaid, mergeCategories, autoMergeScapiaCards, importData, clearAllData }}>
             {children}
         </DataContext.Provider>
     );

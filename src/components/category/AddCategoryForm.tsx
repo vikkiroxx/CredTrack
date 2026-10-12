@@ -17,16 +17,18 @@ const COLORS = [
 ];
 
 export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => void, editCategoryId?: string }) {
-    const { addCategory, updateCategory, categories } = useData();
+    const { addCategory, updateCategory, mergeCategories, categories } = useData();
 
     // Find existing category if editing
     const existingCategory = editCategoryId ? categories.find(c => c.id === editCategoryId) : null;
+    const otherCategories = categories.filter(c => c.id !== editCategoryId);
 
     const [name, setName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[5]); // Default blue
     const [nextBillDate, setNextBillDate] = useState('');
     const [group, setGroup] = useState('');
     const [cardNumber, setCardNumber] = useState('');
+    const [mergeTargetId, setMergeTargetId] = useState('');
 
     // Pre-fill form if editing
     useEffect(() => {
@@ -146,6 +148,44 @@ export function AddCategoryForm({ onClose, editCategoryId }: { onClose: () => vo
                             className="w-full bg-muted/50 border border-input rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium font-mono"
                         />
                     </div>
+
+                    {/* Merge into another card option (Only when editing) */}
+                    {existingCategory && otherCategories.length > 0 && (
+                        <div className="p-3 bg-muted/30 border border-border rounded-xl space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                                Merge with Another Card
+                            </label>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                Move all transactions from <strong>{existingCategory.name}</strong> into another card (e.g. merging dual RuPay / Visa cards that share the same bill).
+                            </p>
+                            <div className="flex gap-2 pt-1">
+                                <select
+                                    value={mergeTargetId}
+                                    onChange={(e) => setMergeTargetId(e.target.value)}
+                                    className="flex-1 bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                >
+                                    <option value="">Select target card...</option>
+                                    {otherCategories.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    disabled={!mergeTargetId}
+                                    onClick={async () => {
+                                        const target = otherCategories.find(c => c.id === mergeTargetId);
+                                        if (confirm(`Are you sure you want to merge all spends from "${existingCategory.name}" into "${target?.name}"? "${existingCategory.name}" will be deleted.`)) {
+                                            await mergeCategories(existingCategory.id, mergeTargetId);
+                                            onClose();
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-lg text-xs font-bold hover:bg-orange-500/20 disabled:opacity-40 transition-colors"
+                                >
+                                    Merge
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <button
                         type="submit"

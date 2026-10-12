@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useData } from '../../context/DataContext';
+import { useData, type Spend } from '../../context/DataContext';
 import { format, isSameMonth, parseISO, differenceInDays, addDays, isAfter } from 'date-fns';
 import { TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -10,23 +10,33 @@ export function MonthlySummary({ onNavigate }: { onNavigate: (categoryId: string
 
     const today = new Date();
 
-    // Calculate Monthly Totals
-    const { totalSpent, totalPending } = useMemo(() => {
+    // Calculate Monthly Totals & Pending Outstanding
+    const { totalSpent, totalPending, pendingCount } = useMemo(() => {
         let spent = 0;
-        let pending = 0;
+        const isSettlement = (s: Spend) => s.description === 'Bill Settled' || s.amount < 0;
 
+        // Total Spent this month (actual purchases, excluding bill settlement repayments)
         spends.forEach(spend => {
             const spendDate = parseISO(spend.date);
-            if (isSameMonth(spendDate, today)) {
+            if (isSameMonth(spendDate, today) && !isSettlement(spend)) {
                 spent += spend.amount;
-                if (!spend.isPaid) {
-                    pending += spend.amount;
-                }
             }
         });
 
-        return { totalSpent: spent, totalPending: pending };
-    }, [spends]);
+        // Total Pending Bills = Sum of positive net balances across all categories/cards
+        let pending = 0;
+        let count = 0;
+        categories.forEach(cat => {
+            const catSpends = spends.filter(s => s.categoryId === cat.id);
+            const netBalance = catSpends.reduce((acc, s) => acc + s.amount, 0);
+            if (netBalance > 0.01) {
+                pending += netBalance;
+                count++;
+            }
+        });
+
+        return { totalSpent: spent, totalPending: pending, pendingCount: count };
+    }, [spends, categories]);
 
     // Find Upcoming Bills (Next 7 Days)
     const upcomingItems = useMemo(() => {
@@ -99,20 +109,39 @@ export function MonthlySummary({ onNavigate }: { onNavigate: (categoryId: string
         <div className="space-y-6 mb-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                    <div className="absolute right-2 top-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <TrendingUp className="w-12 h-12 text-primary" />
+                <div className="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                        <p className="text-xs font-medium text-muted-foreground truncate">Total Spent</p>
+                        <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                            <TrendingUp className="w-4 h-4" />
+                        </div>
                     </div>
-                    <p className="text-xs font-medium text-muted-foreground z-10">Total Spent (This Month)</p>
-                    <p className="text-xl font-bold text-primary mt-1 z-10">₹{totalSpent.toLocaleString()}</p>
+                    <div>
+                        <p className="text-lg sm:text-xl font-bold text-primary tracking-tight truncate">
+                            ₹{totalSpent.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">This Month</p>
+                    </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                    <div className="absolute right-2 top-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Clock className="w-12 h-12 text-orange-500" />
+                <div className="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                        <p className="text-xs font-medium text-muted-foreground truncate">Pending Bills</p>
+                        <div className="flex items-center gap-1 bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {pendingCount > 0 && (
+                                <span className="text-[10px] font-bold">
+                                    {pendingCount} {pendingCount === 1 ? 'card' : 'cards'}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-xs font-medium text-muted-foreground z-10">Pending Bills</p>
-                    <p className="text-xl font-bold text-orange-500 mt-1 z-10">₹{totalPending.toLocaleString()}</p>
+                    <div>
+                        <p className="text-lg sm:text-xl font-bold text-orange-500 tracking-tight truncate">
+                            ₹{totalPending.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Total Outstanding</p>
+                    </div>
                 </div>
             </div>
 

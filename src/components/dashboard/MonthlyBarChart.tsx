@@ -10,6 +10,9 @@ export function MonthlyBarChart() {
         const monthlyData: Record<string, number> = {};
 
         spends.forEach(spend => {
+            // Only count actual spending/purchases, ignore bill settlement repayments
+            if (spend.description === 'Bill Settled' || spend.amount <= 0) return;
+
             const date = parseISO(spend.date);
 
             // Filter out future months
@@ -27,7 +30,7 @@ export function MonthlyBarChart() {
         return Object.entries(monthlyData)
             .map(([key, value]) => ({
                 month: format(parseISO(key + '-01'), 'MMM yy'), // Label: "Dec 24"
-                amount: value,
+                amount: Math.round(value),
                 rawDate: key
             }))
             .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
@@ -38,10 +41,13 @@ export function MonthlyBarChart() {
 
     return (
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-            <h3 className="text-lg font-bold mb-4">Monthly Trends</h3>
+            <div className="mb-4">
+                <h3 className="text-lg font-bold">Monthly Trends</h3>
+                <p className="text-xs text-muted-foreground">Actual monthly spending (last 6 months)</p>
+            </div>
             <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <BarChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                         <XAxis
                             dataKey="month"
@@ -53,7 +59,7 @@ export function MonthlyBarChart() {
                             tick={{ fontSize: 12, fontWeight: 'bold', fill: '#e2e8f0' }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(value) => `₹${value / 1000}k`}
+                            tickFormatter={(value) => value >= 1000 ? `₹${Math.round(value / 1000)}k` : `₹${value}`}
                         />
                         <Tooltip
                             cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }}
@@ -63,7 +69,7 @@ export function MonthlyBarChart() {
                                 borderRadius: '8px',
                                 color: 'hsl(var(--popover-foreground))'
                             }}
-                            formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Spent']}
+                            formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, 'Spent']}
                         />
                         <Bar
                             dataKey="amount"

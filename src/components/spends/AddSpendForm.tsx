@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useData, type Spend } from '../../context/DataContext';
 import { X, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { format } from 'date-fns';
+import { format, addMonths, addYears, parseISO, differenceInMonths, differenceInYears } from 'date-fns';
 
 export type InitialSpendData = {
     amount?: number;
@@ -27,9 +27,23 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [dueDate, setDueDate] = useState('');
     const [emiEndDate, setEmiEndDate] = useState('');
+    const [durationValue, setDurationValue] = useState('');
+    const [isCustomEndDate, setIsCustomEndDate] = useState(false);
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurringFrequency, setRecurringFrequency] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
     const [isPaid, setIsPaid] = useState(false);
+
+    const calculateEndDate = (freq: 'MONTHLY' | 'YEARLY', countStr: string, startDateStr: string) => {
+        const count = parseInt(countStr);
+        if (!count || isNaN(count) || count <= 0) return '';
+        try {
+            const baseDate = parseISO(startDateStr);
+            const target = freq === 'YEARLY' ? addYears(baseDate, count) : addMonths(baseDate, count);
+            return format(target, 'yyyy-MM-dd');
+        } catch {
+            return '';
+        }
+    };
 
     // Initialize state (for both New and Edit modes)
     useEffect(() => {
@@ -40,18 +54,51 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
             setSubcategory(editSpend.subcategory || '');
             setDate(formatDateForInput(editSpend.date));
             setIsRecurring(editSpend.isRecurring);
-            setRecurringFrequency(editSpend.recurringFrequency || 'MONTHLY');
+            const freq = editSpend.recurringFrequency || 'MONTHLY';
+            setRecurringFrequency(freq);
             setDueDate(formatDateForInput(editSpend.dueDate));
             setEmiEndDate(formatDateForInput(editSpend.emiEndDate));
             setIsPaid(editSpend.isPaid);
+
+            if (editSpend.emiEndDate && editSpend.date) {
+                try {
+                    if (freq === 'YEARLY') {
+                        const yrs = differenceInYears(parseISO(editSpend.emiEndDate), parseISO(editSpend.date));
+                        setDurationValue(yrs > 0 ? yrs.toString() : '');
+                    } else {
+                        const mos = differenceInMonths(parseISO(editSpend.emiEndDate), parseISO(editSpend.date));
+                        setDurationValue(mos > 0 ? mos.toString() : '');
+                    }
+                } catch {
+                    setDurationValue('');
+                }
+            } else {
+                setDurationValue('');
+            }
         } else {
             // New Spend Initialization
+            const targetCatId = initialData?.categoryId || defaultCategoryId || categories[0]?.id || '';
+            const initialCat = categories.find(c => c.id === targetCatId);
             setAmount(initialData?.amount?.toString() || '');
             setDescription(initialData?.description || '');
-            setCategoryId(initialData?.categoryId || defaultCategoryId || categories[0]?.id || '');
+            setCategoryId(targetCatId);
             setDate(format(new Date(), 'yyyy-MM-dd'));
+            if (initialCat?.nextBillDate) {
+                setDueDate(formatDateForInput(initialCat.nextBillDate));
+            }
         }
     }, [editSpend, initialData, defaultCategoryId, categories]);
+
+    // When category changes, auto-suggest card's nextBillDate if due date empty
+    const handleCategoryChange = (newCatId: string) => {
+        setCategoryId(newCatId);
+        if (!dueDate) {
+            const cat = categories.find(c => c.id === newCatId);
+            if (cat?.nextBillDate) {
+                setDueDate(formatDateForInput(cat.nextBillDate));
+            }
+        }
+    };
 
 
     // Common subcategories/tags - could be dynamic later
@@ -160,7 +207,7 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
                                         <button
                                             key={cat.id}
                                             type="button"
-                                            onClick={() => setCategoryId(cat.id)}
+                                            onClick={() => handleCategoryChange(cat.id)}
                                             className={cn(
                                                 "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
                                                 categoryId === cat.id
@@ -222,7 +269,13 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
                                 <input
                                     type="date"
                                     value={date}
-                                    onChange={(e) => setDate(e.target.value)}
+                                    onChange={(e) => {
+                                        const newDate = e.target.value;
+                                        setDate(newDate);
+                                        if (durationValue && !isCustomEndDate) {
+                                            setEmiEndDate(calculateEndDate(recurringFrequency, durationValue, newDate));
+                                        }
+                                    }}
                                     className="w-full bg-muted/50 border border-input rounded-lg px-3 py-2 pl-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
                                 />
                                 <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -253,39 +306,150 @@ export function AddSpendForm({ onClose, defaultCategoryId, initialData, editSpen
 
                     {/* Recurring Options */}
                     {isRecurring && (
-                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200 space-y-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                            <div className="flex gap-4">
+                        <div className="animate-in fade-in zoom-in slide-in-from-top-2 duration-200 space-y-4 p-4 rounded-xl bg-muted/30 border border-border/60">
+                            {/* Frequency and Next Due Date */}
+                            <div className="flex gap-3">
                                 <div className="flex-1">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Frequency</label>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Frequency</label>
                                     <select
                                         value={recurringFrequency}
-                                        onChange={(e) => setRecurringFrequency(e.target.value as 'MONTHLY' | 'YEARLY')}
-                                        className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        onChange={(e) => {
+                                            const freq = e.target.value as 'MONTHLY' | 'YEARLY';
+                                            setRecurringFrequency(freq);
+                                            if (!isCustomEndDate) {
+                                                setEmiEndDate(calculateEndDate(freq, durationValue, date));
+                                            }
+                                        }}
+                                        className="w-full mt-1.5 bg-background border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     >
                                         <option value="MONTHLY">Monthly</option>
                                         <option value="YEARLY">Yearly</option>
                                     </select>
                                 </div>
                                 <div className="flex-1">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Due (Opt)</label>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Next Due Date (Opt)</label>
                                     <input
                                         type="date"
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
-                                        className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full mt-1.5 bg-background border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     />
+                                    {categories.find(c => c.id === categoryId)?.nextBillDate && (
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            Card Bill: {format(parseISO(categories.find(c => c.id === categoryId)!.nextBillDate!), 'dd MMM')}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* Duration (Tenure in Months / Years) */}
                             <div>
-                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">End Date (Optional)</label>
-                                <input
-                                    type="date"
-                                    value={emiEndDate}
-                                    onChange={(e) => setEmiEndDate(e.target.value)}
-                                    className="w-full mt-1 bg-background border border-input rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    placeholder="Leave empty for forever"
-                                />
-                                <p className="text-[10px] text-muted-foreground mt-1">Leave "Ends On" empty for ongoing subscriptions (Netflix, etc).</p>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        {recurringFrequency === 'MONTHLY' ? 'Duration (Number of Months / EMIs)' : 'Duration (Number of Years)'}
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCustomEndDate(!isCustomEndDate)}
+                                        className="text-[11px] text-primary hover:underline font-medium"
+                                    >
+                                        {isCustomEndDate ? '← Enter Months/Years' : 'Custom End Date →'}
+                                    </button>
+                                </div>
+
+                                {!isCustomEndDate ? (
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder={recurringFrequency === 'MONTHLY' ? 'e.g. 6 (or leave empty for ongoing)' : 'e.g. 1 (or leave empty for ongoing)'}
+                                                value={durationValue}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setDurationValue(val);
+                                                    setEmiEndDate(calculateEndDate(recurringFrequency, val, date));
+                                                }}
+                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+                                                {recurringFrequency === 'MONTHLY' ? 'Months' : 'Years'}
+                                            </span>
+                                        </div>
+
+                                        {/* Quick Tenure Chips */}
+                                        <div className="flex flex-wrap gap-1.5 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDurationValue('');
+                                                    setEmiEndDate('');
+                                                }}
+                                                className={cn(
+                                                    "px-2.5 py-1 rounded-md text-xs font-medium border transition-all active:scale-95",
+                                                    durationValue === ''
+                                                        ? "bg-primary text-primary-foreground border-primary"
+                                                        : "bg-background text-muted-foreground border-border hover:bg-muted"
+                                                )}
+                                            >
+                                                Ongoing / Subscription
+                                            </button>
+                                            {(recurringFrequency === 'MONTHLY' ? ['3', '6', '9', '12', '24'] : ['1', '2', '3', '5']).map(val => (
+                                                <button
+                                                    key={val}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setDurationValue(val);
+                                                        setEmiEndDate(calculateEndDate(recurringFrequency, val, date));
+                                                    }}
+                                                    className={cn(
+                                                        "px-2.5 py-1 rounded-md text-xs font-medium border transition-all active:scale-95",
+                                                        durationValue === val
+                                                            ? "bg-primary text-primary-foreground border-primary"
+                                                            : "bg-background text-muted-foreground border-border hover:bg-muted"
+                                                    )}
+                                                >
+                                                    {recurringFrequency === 'MONTHLY' ? `${val} mo` : `${val} yr`}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Computed Summary Preview */}
+                                        <div className="p-2.5 rounded-lg bg-background/80 border border-border/80 text-xs flex items-center justify-between mt-2">
+                                            <span className="text-muted-foreground">Tenure Summary:</span>
+                                            <span className="font-semibold text-foreground">
+                                                {durationValue && emiEndDate
+                                                    ? `${durationValue} ${recurringFrequency === 'MONTHLY' ? 'Installments' : 'Years'} • Ends ${format(parseISO(emiEndDate), 'dd MMM yyyy')}`
+                                                    : 'Ongoing Subscription (No End Date)'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <input
+                                            type="date"
+                                            value={emiEndDate}
+                                            onChange={(e) => {
+                                                setEmiEndDate(e.target.value);
+                                                // calculate duration back if valid
+                                                if (e.target.value && date) {
+                                                    try {
+                                                        if (recurringFrequency === 'YEARLY') {
+                                                            const yrs = differenceInYears(parseISO(e.target.value), parseISO(date));
+                                                            setDurationValue(yrs > 0 ? yrs.toString() : '');
+                                                        } else {
+                                                            const mos = differenceInMonths(parseISO(e.target.value), parseISO(date));
+                                                            setDurationValue(mos > 0 ? mos.toString() : '');
+                                                        }
+                                                    } catch {}
+                                                }
+                                            }}
+                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                            placeholder="Leave empty for ongoing"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-1">Leave empty for ongoing subscriptions (Netflix, etc).</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
